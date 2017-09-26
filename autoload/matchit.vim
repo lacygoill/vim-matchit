@@ -221,7 +221,7 @@ fu! matchit#multi(flags, mode) abort "{{{2
     " ┌───────────┤ ┌───────┤ ┌────────────────────────────────────────────────┤
     " (:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>
 
-    let def_words =  escape(&l:mps, '[$^.*~\\/?]').(!empty(&l:mps) ? ',' : '')
+    let def_words = escape(&l:mps, '[$^.*~\\/?]').(!empty(&l:mps) ? ',' : '')
                  \. '\/\*:\*\/'
                  \. ',#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>'
 
@@ -323,8 +323,8 @@ fu! matchit#multi(flags, mode) abort "{{{2
         let skip = '0'
     else
         try
-            execute "if " . skip . "| let skip = '0' | endif"
-        catch /^Vim\%((\a\+)\)\=:E363/
+            exe 'if '.skip."| let skip = '0' | endif"
+        catch /\v^Vim%(\(\a+\))?:E363/
             " We won't find anything, so skip searching, should keep Vim responsive.
             return
         endtry
