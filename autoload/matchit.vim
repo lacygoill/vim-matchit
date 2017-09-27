@@ -4,6 +4,10 @@ endif
 let g:autoloaded_matchit = 1
 
 " TODO:
+" We should store the tokens in a list not in a string.
+" This would allow us to get rid of things like `!empty(…) ? ',' : ''`
+
+" TODO:
 " Make `]%` &friends repeatable with `;` and `,`.
 "
 " TODO:
@@ -215,13 +219,14 @@ fu! matchit#multi(flags, mode) abort "{{{2
 
 
     "             ┌─ default pairs stored in 'mps'
+    "             │
     "             │         ┌─ C-style comment (to mimic `%`)
     "             │         │                                                  ┌ C preprocessor conditionals
     "             │         │                                                  │ (to mimic `%`)
     " ┌───────────┤ ┌───────┤ ┌────────────────────────────────────────────────┤
     " (:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>
 
-    let def_words = escape(&l:mps, '[$^.*~\\/?]').(!empty(&l:mps) ? ',' : '')
+    let def_words = escape(&l:mps, '[^$.*~\/?]').(!empty(&l:mps) ? ',' : '')
                  \. '\/\*:\*\/'
                  \. ',#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>'
 
@@ -601,7 +606,7 @@ fu! matchit#wrapper(word, forward, mode) abort range "{{{2
         " quote the special chars in 'matchpairs'
         " replace [,:] with \|
         " append the pairs: /*, */    #if:#ifdef,#else:#elif,#endif
-        let def_words = escape(&l:mps, '[$^.*~\\/?]')
+        let def_words = escape(&l:mps, '[^$.*~\/?]')
                      \. (!empty(&l:mps) ? ',' : '')
                      \. '\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>'
 
