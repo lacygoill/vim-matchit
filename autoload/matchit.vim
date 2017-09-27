@@ -637,31 +637,18 @@ fu! matchit#wrapper(word, forward, mode) abort range "{{{2
     " Require match to end on or after the cursor and prefer it to
     " start on or before the cursor.
     let matchline = getline(startline)
-    if a:word != ''
-        " word given
-        if a:word !~ s:all
-            echohl WarningMsg
-            echo 'Missing rule for word:'.string(a:word)
-            echohl NONE
-            return s:clean_up(opt_save, a:mode, startline, startcol)
-        endif
-        let matchline = a:word
-        let cur_col   = 0
-        let prefix    = '^\%('
-        let suffix    = '\)$'
-        " Now the case when "word" is not given
-    else  " Find the match that ends on or after the cursor and set cur_col.
-        let regexp = s:wholematch(matchline, s:all, startcol-1)
-        let cur_col = match(matchline, regexp)
-        " If there is no match, give up.
-        if cur_col == -1
-            return s:clean_up(opt_save, a:mode, startline, startcol)
-        endif
-        let end_col = matchend(matchline, regexp)
-        let suf     = strlen(matchline) - end_col
-        let prefix  = (cur_col ? '^.*\%'.(cur_col + 1).'c\%(' : '^\%(')
-        let suffix  = (suf ? '\)\%'.(end_col + 1).'c.*$' : '\)$')
+
+    " Find the match that ends on or after the cursor and set cur_col.
+    let regexp = s:wholematch(matchline, s:all, startcol-1)
+    let cur_col = match(matchline, regexp)
+    " If there is no match, give up.
+    if cur_col == -1
+        return s:clean_up(opt_save, a:mode, startline, startcol)
     endif
+    let end_col = matchend(matchline, regexp)
+    let suf     = strlen(matchline) - end_col
+    let prefix  = (cur_col ? '^.*\%'.(cur_col + 1).'c\%(' : '^\%(')
+    let suffix  = (suf ? '\)\%'.(end_col + 1).'c.*$' : '\)$')
 
     " Third step:  Find the group and single word that match, and the original
     " (backref) versions of these.  Then, resolve the backrefs.
