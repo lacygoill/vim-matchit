@@ -100,7 +100,6 @@ fu! s:clean_up(options, mode, startline, startcol, ...) abort "{{{2
             endif
         endif
     endif
-    return 0
 endfu
 
 fu! s:count(string, pattern, ...) abort "{{{2
@@ -578,7 +577,8 @@ fu! matchit#wrapper(forward, mode) abort range "{{{2
     " Use default behavior if called with a count.
     if v:count
         exe 'norm! '.v:count.'%'
-        return s:clean_up(opt_save, a:mode, startline, startcol)
+        call s:clean_up(opt_save, a:mode, startline, startcol)
+        return
     endif
 
     call s:set_some_var()
@@ -599,7 +599,8 @@ fu! matchit#wrapper(forward, mode) abort range "{{{2
     let cur_col = match(matchline, regexp)
     " If there is no match, give up.
     if cur_col == -1
-        return s:clean_up(opt_save, a:mode, startline, startcol)
+        call s:clean_up(opt_save, a:mode, startline, startcol)
+        return
     endif
     let end_col = matchend(matchline, regexp)
     let suf     = strlen(matchline) - end_col
@@ -678,7 +679,7 @@ fu! matchit#wrapper(forward, mode) abort range "{{{2
     if sp_return > 0
         exe final_position
     endif
-    return s:clean_up(opt_save, a:mode, startline, startcol, mid.'\|'.fin)
+    call s:clean_up(opt_save, a:mode, startline, startcol, mid.'\|'.fin)
 endfu
 
 " Variables {{{1
