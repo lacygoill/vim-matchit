@@ -573,12 +573,6 @@ endfu
 fu! matchit#wrapper(forward, mode) abort range "{{{2
     let opt_save = s:options_save()
 
-    " If this function was called from Visual mode, make sure that the cursor
-    " is at the correct end of the Visual range:
-    if a:mode == 'v'
-        exe "norm! gv\e"
-    endif
-
     " In s:clean_up(), we may need to check whether the cursor moved forward.
     let [ startline, startcol ] = getpos('.')[1:2]
     " Use default behavior if called with a count.

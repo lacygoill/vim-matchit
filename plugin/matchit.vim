@@ -25,4 +25,3 @@ ono <silent> ]%    v:<c-u>call matchit#multi('W',  'o')<cr>
 
 " text object:
 xmap a% o<esc>[%v%
-
