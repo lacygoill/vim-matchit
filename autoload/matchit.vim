@@ -207,67 +207,7 @@ fu! matchit#multi(flags, mode) abort "{{{2
     let opt_save = s:options_save()
     let [ startline, startcol ] = [ line('.'), col('.') ]
 
-    " First step:  if not already done, set the script variables
-    "
-    "         ┌──────────┬─────────────────────────────────────────────┐
-    "         │ s:has_BR │ flag for whether there are backrefs         │
-    "         ├──────────┼─────────────────────────────────────────────┤
-    "         │ s:pat    │ parsed version of b:match_words             │
-    "         ├──────────┼─────────────────────────────────────────────┤
-    "         │ s:all    │ regex based on s:pat and the default groups │
-    "         └──────────┴─────────────────────────────────────────────┘
-
-
-    "             ┌─ default pairs stored in 'mps'
-    "             │
-    "             │         ┌─ C-style comment (to mimic `%`)
-    "             │         │                                                  ┌ C preprocessor conditionals
-    "             │         │                                                  │ (to mimic `%`)
-    " ┌───────────┤ ┌───────┤ ┌────────────────────────────────────────────────┤
-    " (:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>
-
-    let def_words = escape(&l:mps, '[^$.*~\/?]').(!empty(&l:mps) ? ',' : '')
-                 \. '\/\*:\*\/'
-                 \. ',#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>'
-
-    let match_words = b:match_words
-
-    if match_words != s:last_words || &l:mps != s:last_mps
-        " We store the last used value of `b:match_words` and `&l:mps` in
-        " script-local variables. Update them.
-        let s:last_words = match_words
-        let s:last_mps   = &l:mps
-
-        " append `def_words`
-        let match_words .= (!empty(match_words) ? ',' : '').def_words
-
-        if match_words =~ s:even_backslash.'\\\d'
-            let s:has_BR = 1
-            let s:pat    = s:parse_words(match_words)
-        else
-            let s:has_BR = 0
-            let s:pat    = match_words
-        endif
-
-        " TODO: Don't remove `s:all` for the moment. It would raise an error
-        " if we use `]%` on a token, then `%` on the same token, in a new Vim
-        " buffer.
-        " The code is badly designed. We shouldn't need to set `s:all` from this
-        " function to be able to reliably use it in another, while we don't
-        " even use it here !
-        "
-        " Besides, in `s:match_wrapper()`, `s:all` is defined like this:
-        "
-        "         '\%('.
-        "               substitute(s:pat, s:even_backslash.'\zs[,:]\+', '\\|', 'g')
-        "         .'\)'
-        "
-        " Here we don't define it with the positive lookbehind assertion,
-        " using `s:even_backslash`. There, we do use it. Why the difference?
-        let s:all = '\%('
-                 \.      substitute(s:pat, '[,:]\+', '\\|', 'g')
-                 \. '\)'
-    endif
+    call s:set_some_var()
 
     " Second step:  figure out the patterns for searchpair()
     " and save the screen, cursor position, and 'ignorecase'.
@@ -541,6 +481,69 @@ fu! s:resolve(source, target, output) abort "{{{2
     endif
 endfu
 
+fu! s:set_some_var() abort "{{{2
+
+    " if not already done, set the following script variables
+    "
+    "         ┌──────────┬──────────────────────────────────────────────┐
+    "         │ s:has_BR │ flag for whether there are backrefs          │
+    "         ├──────────┼──────────────────────────────────────────────┤
+    "         │ s:pat    │ parsed version of b:match_words              │
+    "         ├──────────┼──────────────────────────────────────────────┤
+    "         │ s:all    │ regexp based on s:pat and the default groups │
+    "         └──────────┴──────────────────────────────────────────────┘
+
+    let match_words = get(b:, 'match_words', '')
+
+    "             ┌─ default pairs stored in 'mps'
+    "             │
+    "             │         ┌─ C-style comment (to mimic `%`)
+    "             │         │                                                  ┌ C preprocessor conditionals
+    "             │         │                                                  │ (to mimic `%`)
+    " ┌───────────┤ ┌───────┤ ┌────────────────────────────────────────────────┤
+    " (:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>
+
+    let def_words = escape(&l:mps, '[^$.*~\/?]').(!empty(&l:mps) ? ',' : '')
+                 \. '\/\*:\*\/'
+                 \. ',#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>'
+
+    if match_words != s:last_words || &l:mps != s:last_mps
+        " quote the special chars in 'matchpairs'
+        " replace [,:] with \|
+        " append the pairs: /*, */    #if:#ifdef,#else:#elif,#endif
+        let def_words = escape(&l:mps, '[^$.*~\/?]')
+                     \. (!empty(&l:mps) ? ',' : '')
+                     \. '\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>'
+
+        " We store the last used value of `b:match_words` and `&l:mps` in
+        " script-local variables. Update them.
+        let s:last_mps   = &l:mps
+        " append `def_words` before saving in `s:last_words`
+        let match_words  = match_words.(!empty(match_words) ? ',' : '').def_words
+        let s:last_words = match_words
+
+        if match_words =~ s:even_backslash.'\\\d'
+            let s:has_BR = 1
+            let s:pat    = s:parse_words(match_words)
+        else
+            let s:has_BR = 0
+            let s:pat    = match_words
+        endif
+        let s:all = '\%('.substitute(s:pat, s:even_backslash.'\zs[,:]\+', '\\|', 'g').'\)'
+
+        " FIXME:
+        " The next lines were not present in `s:MultiMatch()`.
+        " Now that we have extracted some code inside `s:set_some_var()`,
+        " and call the latter in `MultiMatch()`, does it cause an issue
+        " if we reset `s:patBR`?
+
+        " Reconstruct the version with unresolved backrefs.
+        let s:patBR = substitute(match_words.',',
+                    \ s:even_backslash.'\zs[,:]*,[,:]*', ',', 'g')
+        let s:patBR = substitute(s:patBR, s:even_backslash.'\zs:\{2,}', ':', 'g')
+    endif
+endfu
+
 fu! s:wholematch(string, pat, start) abort "{{{2
 
     " TODO: What should I do if a:start is out of range?
@@ -571,7 +574,7 @@ fu! s:wholematch(string, pat, start) abort "{{{2
     return prefix.group.suffix
 endfu
 
-fu! matchit#wrapper(word, forward, mode) abort range "{{{2
+fu! matchit#wrapper(forward, mode) abort range "{{{2
     let opt_save = s:options_save()
 
     " If this function was called from Visual mode, make sure that the cursor
@@ -586,46 +589,9 @@ fu! matchit#wrapper(word, forward, mode) abort range "{{{2
     if v:count
         exe 'norm! '.v:count.'%'
         return s:clean_up(opt_save, a:mode, startline, startcol)
-    end
-
-    " First step:  if not already done, set the script variables
-    "
-    "         ┌──────────┬──────────────────────────────────────────────┐
-    "         │ s:has_BR │ flag for whether there are backrefs          │
-    "         ├──────────┼──────────────────────────────────────────────┤
-    "         │ s:pat    │ parsed version of b:match_words              │
-    "         ├──────────┼──────────────────────────────────────────────┤
-    "         │ s:all    │ regexp based on s:pat and the default groups │
-    "         └──────────┴──────────────────────────────────────────────┘
-
-    let match_words = get(b:, 'match_words', '')
-
-    if match_words != s:last_words || &l:mps != s:last_mps
-        let s:last_mps = &l:mps
-
-        " quote the special chars in 'matchpairs'
-        " replace [,:] with \|
-        " append the pairs: /*, */    #if:#ifdef,#else:#elif,#endif
-        let def_words = escape(&l:mps, '[^$.*~\/?]')
-                     \. (!empty(&l:mps) ? ',' : '')
-                     \. '\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>'
-
-        let match_words  = match_words.(!empty(match_words) ? ',' : '').def_words
-        let s:last_words = match_words
-        if match_words !~ s:even_backslash.'\\\d'
-            let s:has_BR = 0
-            let s:pat    = match_words
-        else
-            let s:has_BR = 1
-            let s:pat    = s:parse_words(match_words)
-        endif
-        let s:all = substitute(s:pat, s:even_backslash.'\zs[,:]\+', '\\|', 'g')
-        let s:all = '\%('.s:all.'\)'
-        " Reconstruct the version with unresolved backrefs.
-        let s:patBR = substitute(match_words.',',
-                    \ s:even_backslash.'\zs[,:]*,[,:]*', ',', 'g')
-        let s:patBR = substitute(s:patBR, s:even_backslash.'\zs:\{2,}', ':', 'g')
     endif
+
+    call s:set_some_var()
 
     " Second step:  set the following local variables:
     "
