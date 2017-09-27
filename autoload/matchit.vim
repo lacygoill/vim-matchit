@@ -205,7 +205,7 @@ fu! matchit#multi(flags, mode) abort "{{{2
     let level = v:count1
 
     let opt_save = s:options_save()
-    let [ startline, startcol ] = [ line('.'), col('.') ]
+    let [ startline, startcol ] = getpos('.')[1:2]
 
     call s:set_some_var()
 
