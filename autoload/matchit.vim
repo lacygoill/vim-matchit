@@ -8,9 +8,6 @@ let g:autoloaded_matchit = 1
 " This would allow us to get rid of things like `!empty(…) ? ',' : ''`
 
 " TODO:
-" Make `]%` &friends repeatable with `;` and `,`.
-"
-" TODO:
 " Look at the comments in the original plugin. Search for `Autocomplete()`.
 " The author wanted to implement a function which completes a token.
 " If it's useful, try to finish what he began. Or re-implement it entirely.
@@ -20,8 +17,8 @@ let g:autoloaded_matchit = 1
 " This would require an option:  how many lines to scan (default 1).
 " This would be useful for Python, maybe also for *ML.
 "
-" TODO:  Eliminate the `multi_match()` function.
-" Add yet another argument to match_wrapper() instead.
+" TODO:  Eliminate the `multi()` function.
+" Add yet another argument to `wrapper()` instead.
 "
 " TODO:  Allow:
 "
@@ -94,10 +91,9 @@ fu! s:clean_up(options, mode, startline, startcol, ...) abort "{{{2
         if a:0
             " Check whether the match is a single character.  If not, move to the
             " end of the match.
-            let matchline = getline('.')
-            let cur_col   = col('.')
-            let regexp    = s:wholematch(matchline, a:1, cur_col-1)
-            let end_col   = matchend(matchline, regexp)
+            let [ matchline, cur_col ] = getpos('.')[1:2]
+            let regexp                 = s:wholematch(matchline, a:1, cur_col-1)
+            let end_col                = matchend(matchline, regexp)
 
             if end_col > cur_col  " This is NOT off by one!
                 call cursor(0, end_col)
@@ -298,9 +294,9 @@ fu! s:options_save() abort "{{{2
 
     " FIXME:
     " Why do we need to set 've' like this?
-    " The original plugin did it for `s:match_wrapper()`, but not for
-    " `s:multi_match()`. Now that we delegate the saving of the options to
-    " this function, we also temporarily set 've' for `s:multi_match()`.
+    " The original plugin did it for `wrapper()`, but not for
+    " `multi()`. Now that we delegate the saving of the options to
+    " this function, we also temporarily set 've' for `multi()`.
     " Is it an error?
     if &ve != ''
         let opt_save.ve = &ve
@@ -314,7 +310,7 @@ fu! s:parse_skip(str) abort "{{{2
     " Search backwards for "if" or "while" or "<tag>" or ...
     " and return "endif" or "endwhile" or "</tag>" or ... .
     " For now, this uses b:match_words and the same script variables
-    " as s:match_wrapper() .  Later, it may get its own patterns,
+    " as `wrapper()`.  Later, it may get its own patterns,
     " either from a buffer variable or passed as arguments.
 
     " Parse special strings as typical skip arguments for searchpair():
@@ -584,7 +580,7 @@ fu! matchit#wrapper(forward, mode) abort range "{{{2
     endif
 
     " In s:clean_up(), we may need to check whether the cursor moved forward.
-    let [ startline, startcol ] = [ line('.'), col('.') ]
+    let [ startline, startcol ] = getpos('.')[1:2]
     " Use default behavior if called with a count.
     if v:count
         exe 'norm! '.v:count.'%'
