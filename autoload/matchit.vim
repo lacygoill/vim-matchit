@@ -214,7 +214,7 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     return ini.':'.tailBR
 endfu
 
-fu! matchit#next_item(fwd, mode) abort "{{{2
+fu! matchit#next_word(fwd, mode) abort "{{{2
     let [ old_ic, startline, startcol ] = s:get_info()
 
     " Use default behavior if called with a count.
@@ -245,7 +245,7 @@ fu! matchit#next_item(fwd, mode) abort "{{{2
     let line = getline(startline)
 
     " Find the match that ends on or after the cursor and set cur_col.
-    let regex   = s:wholematch(line, s:all, startcol-1)
+    let regex   = s:wholematch(line, s:all_tokens, startcol-1)
     let cur_col = match(line, regex)
     " If there is no match, give up.
     if cur_col == -1
@@ -456,31 +456,37 @@ fu! s:parse_skip(str) abort "{{{2
 endfu
 
 fu! s:parse_words(groups) abort "{{{2
-    " Input a comma-separated list of groups with backrefs, such as
-    "   a:groups = '\(foo\):end\1,\(bar\):end\1'
-    " and return a comma-separated list of groups with backrefs replaced:
-    "   return '\(foo\):end\(foo\),\(bar\):end\(bar\)'
+
+    " Input: a comma-separated list of groups with backrefs, such as:
+    "
+    "       '\(foo\):end\1,\(bar\):end\1'
+    "
+    " Output: a comma-separated list of groups with backrefs replaced:
+    "
+    "       '\(foo\):end\(foo\),\(bar\):end\(bar\)'
 
     let groups = substitute(a:groups.',', s:even_backslash.'\zs[,:]*,[,:]*', ',', 'g')
     let groups = substitute(groups, s:even_backslash.'\zs:\{2,}', ':', 'g')
     let parsed = ''
 
     while groups =~ '[^,:]'
-        let i = matchend(groups, s:even_backslash.':')
-        let j = matchend(groups, s:even_backslash.',')
-        let ini = strpart(groups, 0, i-1)
-        let tail = strpart(groups, i, j-i-1).':'
+        let i      = matchend(groups, s:even_backslash.':')
+        let j      = matchend(groups, s:even_backslash.',')
+        let ini    = strpart(groups, 0, i-1)
+        let tail   = strpart(groups, i, j-i-1).':'
         let groups = strpart(groups, j)
         let parsed = parsed.ini
-        let i = matchend(tail, s:even_backslash.':')
+        let i      = matchend(tail, s:even_backslash.':')
+
         while i != -1
             " In 'if:else:endif', ini='if' and word='else' and then word='endif'.
-            let word = strpart(tail, 0, i-1)
-            let tail = strpart(tail, i)
-            let i = matchend(tail, s:even_backslash.':')
+            let word   = strpart(tail, 0, i-1)
+            let tail   = strpart(tail, i)
+            let i      = matchend(tail, s:even_backslash.':')
             let parsed = parsed.':'.s:resolve(ini, word, 'word')
         endwhile " Now, tail has been used up.
-        let parsed = parsed . ","
+
+        let parsed = parsed.','
     endwhile " groups =~ '[^,:]'
 
     let parsed = substitute(parsed, ',$', '', '')
@@ -608,21 +614,19 @@ fu! s:set_pat() abort "{{{2
 
     " if not already done, set the following script variables
     "
-    "         ┌──────────┬──────────────────────────────────────────────┐
-    "         │ s:has_BR │ flag for whether there are backrefs          │
-    "         │          │ in b:match_words                             │
-    "         ├──────────┼──────────────────────────────────────────────┤
-    "         │ s:pat    │ parsed version of b:match_words              │
-    "         ├──────────┼──────────────────────────────────────────────┤
-    "         │ s:all    │ regex based on s:pat and the default groups  │
-    "         └──────────┴──────────────────────────────────────────────┘
+    "         ┌──────────────┬─────────────────────────────────────┐
+    "         │ s:has_BR     │ flag for whether there are backrefs │
+    "         │              │ in b:match_words                    │
+    "         ├──────────────┼─────────────────────────────────────┤
+    "         │ s:pat        │ parsed version of b:match_words     │
+    "         │              │                 + def_words         │
+    "         ├──────────────┼─────────────────────────────────────┤
+    "         │ s:all_tokens │ conversion of `s:pat` into a regex  │
+    "         └──────────────┴─────────────────────────────────────┘
 
     let match_words = get(b:, 'match_words', '')
 
     if match_words != s:last_words || &l:mps != s:last_mps
-        " quote the special chars in 'matchpairs'
-        " append the pairs: /*, */    #if:#ifdef,#else:#elif,#endif
-        " replace [,:] with \|
 
         "             ┌─ default pairs stored in 'mps'
         "             │
@@ -643,7 +647,7 @@ fu! s:set_pat() abort "{{{2
         let match_words  = match_words.(!empty(match_words) ? ',' : '').def_words
         let s:last_words = match_words
 
-        " There's a backref in `match_words` IFF we can find an odd number of
+        " There's a backref in `match_words` IFF we can find an odd number of{{{
         " backslashes in front of a digit.
         " Watch:
         "         3  →          3    (not a backref)
@@ -666,7 +670,7 @@ fu! s:set_pat() abort "{{{2
         " And the regex we need to check whether `match_words` contains a backref is:
         "
         "         s:even_backslash.'\\\d'
-
+"}}}
         if match_words =~ s:even_backslash.'\\\d'
             let s:has_BR = 1
             let s:pat    = s:parse_words(match_words)
@@ -674,7 +678,7 @@ fu! s:set_pat() abort "{{{2
             let s:has_BR = 0
             let s:pat    = match_words
         endif
-        let s:all = '\%('.substitute(s:pat, s:even_backslash.'\zs[,:]\+', '\\|', 'g').'\)'
+        let s:all_tokens = '\%('.substitute(s:pat, s:even_backslash.'\zs[,:]\+', '\\|', 'g').'\)'
 
         " FIXME:
         " The next lines were not present in `s:MultiMatch()`.
