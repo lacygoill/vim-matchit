@@ -611,7 +611,7 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     " Set the following local variable:
     "
     "         group = colon-separated list of patterns, one of which matches
-    "               = ini:mid:fin or ini:fin
+    "               = start:middle:end or start:end
     "
     " Now, set group and groupBR to the matching group: 'if:endif' or
     " 'while:endwhile' or whatever.  A bit of a kluge:  s:choose() returns
@@ -628,29 +628,29 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     endif
 
     " Fourth step:  Set the arguments for searchpair().
-    let i   = matchend(group, s:even_backslash.':')
-    let j   = matchend(group, '.*'.s:even_backslash.':')
-    let ini = strpart(group, 0, i-1)
-    let mid = substitute(strpart(group, i,j-i-1), s:even_backslash.'\zs:', '\\|', 'g')
-    let fin = strpart(group, j)
+    let i      = matchend(group, s:even_backslash.':')
+    let j      = matchend(group, '.*'.s:even_backslash.':')
+    let start  = strpart(group, 0, i-1)
+    let middle = substitute(strpart(group, i,j-i-1), s:even_backslash.'\zs:', '\\|', 'g')
+    let end    = strpart(group, j)
 
     "Un-escape the remaining , and : characters.
-    let ini = substitute(ini, s:even_backslash . '\zs\\\(:\|,\)', '\1', 'g')
-    let mid = substitute(mid, s:even_backslash . '\zs\\\(:\|,\)', '\1', 'g')
-    let fin = substitute(fin, s:even_backslash . '\zs\\\(:\|,\)', '\1', 'g')
+    let start  = substitute(start, s:even_backslash . '\zs\\\(:\|,\)', '\1', 'g')
+    let middle = substitute(middle, s:even_backslash . '\zs\\\(:\|,\)', '\1', 'g')
+    let end    = substitute(end, s:even_backslash . '\zs\\\(:\|,\)', '\1', 'g')
 
     " searchpair() requires that these patterns avoid \(\) groups.
-    let ini = substitute(ini, s:even_backslash . '\zs\\(', '\\%(', 'g')
-    let mid = substitute(mid, s:even_backslash . '\zs\\(', '\\%(', 'g')
-    let fin = substitute(fin, s:even_backslash . '\zs\\(', '\\%(', 'g')
+    let start  = substitute(start, s:even_backslash . '\zs\\(', '\\%(', 'g')
+    let middle = substitute(middle, s:even_backslash . '\zs\\(', '\\%(', 'g')
+    let end    = substitute(end, s:even_backslash . '\zs\\(', '\\%(', 'g')
 
-    if   a:fwd && matchline =~ prefix.fin.suffix
-    \|| !a:fwd && matchline =~ prefix.ini.suffix
-        let mid = ''
+    if   a:fwd && matchline =~ prefix.end.suffix
+    \|| !a:fwd && matchline =~ prefix.start.suffix
+        let middle = ''
     endif
 
-    let flag =  a:fwd && matchline =~ prefix.fin.suffix
-          \||  !a:fwd && matchline !~ prefix.ini.suffix
+    let flag =  a:fwd && matchline =~ prefix.end.suffix
+          \||  !a:fwd && matchline !~ prefix.start.suffix
           \?        'bW'
           \:        'W'
 
@@ -666,7 +666,7 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     else
         exe 'if '.skip."| let skip = '0' | endif"
     endif
-    let sp_return = searchpair(ini, mid, fin, flag, skip)
+    let sp_return = searchpair(start, middle, end, flag, skip)
     let final_position = 'call cursor('.line('.').','.col('.').')'
     " Restore cursor position and original screen.
     call winrestview(view)
@@ -674,7 +674,7 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     if sp_return > 0
         exe final_position
     endif
-    call s:clean_up(old_ic, a:mode, startline, startcol, mid.'\|'.fin)
+    call s:clean_up(old_ic, a:mode, startline, startcol, middle.'\|'.end)
 endfu
 
 " Variables {{{1
