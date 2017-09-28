@@ -78,6 +78,7 @@ fu! s:clean_up(options, mode, startline, startcol, ...) abort "{{{2
         \.         ' '
         \.         (has_key(a:options, 've') ? 've='.a:options.ve : '')
     endif
+
     " Open folds, if appropriate.
     if a:mode != 'o'
         if &foldopen =~ 'percent'
@@ -86,6 +87,7 @@ fu! s:clean_up(options, mode, startline, startcol, ...) abort "{{{2
         " In Operator-pending mode, we want to include the whole match
         " (for example, d%).
         " This is only a problem if we end up moving in the forward direction.
+
     elseif a:startline < line('.')
     \||    a:startline == line('.') && a:startcol < col('.')
         if a:0
@@ -289,17 +291,6 @@ fu! s:options_save() abort "{{{2
     if exists('b:match_ignorecase') && b:match_ignorecase != &ic
         let opt_save.ic = &ic
         let &ic         = b:match_ignorecase
-    endif
-
-    " FIXME:
-    " Why do we need to set 've' like this?
-    " The original plugin did it for `wrapper()`, but not for
-    " `multi()`. Now that we delegate the saving of the options to
-    " this function, we also temporarily set 've' for `multi()`.
-    " Is it an error?
-    if &ve != ''
-        let opt_save.ve = &ve
-        set ve=
     endif
 
     return opt_save
@@ -583,13 +574,13 @@ fu! matchit#wrapper(forward, mode) abort range "{{{2
 
     call s:set_some_var()
 
-    " Second step:  set the following local variables:
+    " Second step:  set the following variables:
     "
     "     • matchline = line on which the cursor started
     "     • cur_col   = number of characters before match
     "     • prefix    = regexp for start of line to start of match
     "     • suffix    = regexp for end of match to end of line
-    "
+
     " Require match to end on or after the cursor and prefer it to
     " start on or before the cursor.
     let matchline = getline(startline)
