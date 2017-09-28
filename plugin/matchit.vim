@@ -21,8 +21,8 @@ nno <silent> [%     :<c-u>let g:motion_to_repeat = '[%' <bar> call matchit#multi
 
 xmap         ]%     <esc>]%m'gv``
 xmap         [%     <esc>[%m'gv``
-" xno <silent> ]%    :<c-u>call matchit#multi('W',  'v')<cr>m'gv``
-" xno <silent> [%    :<c-u>call matchit#multi('bW', 'v')<cr>m'gv``
+" xno <silent> ]%    :<c-u>call matchit#multi(1, 'v')<cr>m'gv``
+" xno <silent> [%    :<c-u>call matchit#multi(0, 'v')<cr>m'gv``
 
 ono <silent> ]%    v:<c-u>call matchit#multi('W',  'o')<cr>
 ono <silent> [%    v:<c-u>call matchit#multi('bW', 'o')<cr>

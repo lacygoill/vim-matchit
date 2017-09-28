@@ -558,7 +558,7 @@ fu! s:wholematch(line, pat, start) abort "{{{2
     let group = '\%('.a:pat.'\)'
 
     let suffix = a:start+1 < len
-              \?     '\(\%>'.(a:start+1).'c.*$\)\@='
+              \?     '\ze\%>'.(a:start+1).'c'
               \:     '$'
 
     if a:line !~ prefix.group.suffix
