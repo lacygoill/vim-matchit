@@ -83,7 +83,8 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
     " The optional argument is the tail of the matching group.
 
     if a:0
-        let [ startline, startcol, pat ]  = a:000
+        let [ startline, startcol, pat ] = a:000
+        let [ cur_line, cur_col ] = getpos('.')[1:2]
     endif
 
     exe 'set '.(a:old_ic ?  'ic' : 'noic')
@@ -97,17 +98,16 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
         " (for example, d%).
         " This is only a problem if we end up moving in the forward direction.
 
-    elseif a:0 && ( startline < line('.')
-    \||             startline == line('.') && startcol < col('.'))
+    elseif a:0 && ( startline < cur_line
+    \||             startline == cur_line && startcol < cur_col)
             " Check whether the match is a single character.  If not, move to the
             " end of the match.
-            let [ matchline, cur_col ] = getpos('.')[1:2]
-            "                                       ┌ mid.'\|'.fin
-            "                                       │ Ex:
-            "                                       │     'elseif\|endif'
-            "                                     ┌─┤
-            let regex   = s:wholematch(matchline, pat, cur_col-1)
-            let end_col = matchend(matchline, regex)
+            "                                      ┌ mid.'\|'.fin
+            "                                      │ Ex:
+            "                                      │     'elseif\|endif'
+            "                                    ┌─┤
+            let regex   = s:wholematch(cur_line, pat, cur_col-1)
+            let end_col = matchend(cur_line, regex)
 
             "  This is NOT off by one!
             if end_col > cur_col
