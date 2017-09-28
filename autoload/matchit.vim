@@ -155,30 +155,30 @@ fu! s:get_info() abort "{{{2
     return [ &l:ic, line('.'), col('.') ]
 endfu
 
-fu! s:insert_refs(groupBR, prefix, group, suffix, matchline) abort "{{{2
+fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     " Example (simplified HTML patterns):  if
     "   a:groupBR   = '<\(\k\+\)>:</\1>'
     "   a:prefix    = '^.\{3}\('
     "   a:group     = '<\(\k\+\)>:</\(\k\+\)>'
     "   a:suffix    = '\).\{2}$'
-    "   a:matchline =  "123<tag>12" or "123</tag>12"
-    " then extract "tag" from a:matchline and return "<tag>:</tag>" .
+    "   a:line =  "123<tag>12" or "123</tag>12"
+    " then extract "tag" from a:line and return "<tag>:</tag>" .
 
-    if a:matchline !~ a:prefix
-                   \. substitute(a:group, s:even_backslash . '\zs:', '\\|', 'g')
-                   \. a:suffix
+    if a:line !~ a:prefix
+              \. substitute(a:group, s:even_backslash . '\zs:', '\\|', 'g')
+              \. a:suffix
         return a:group
     endif
 
     let i      = matchend(a:groupBR, s:even_backslash . ':')
     let ini    = strpart(a:groupBR, 0, i-1)
     let tailBR = strpart(a:groupBR, i)
-    let word   = s:choose(a:group, a:matchline, ':', '', a:prefix, a:suffix, a:groupBR)
+    let word   = s:choose(a:group, a:line, ':', '', a:prefix, a:suffix, a:groupBR)
     let i      = matchend(word, s:even_backslash . ":")
     let wordBR = strpart(word, i)
     let word   = strpart(word, 0, i-1)
 
-    " Now, a:matchline =~ a:prefix . word . a:suffix
+    " Now, a:line =~ a:prefix . word . a:suffix
     if wordBR != ini
         let table = s:resolve(ini, wordBR, 'table')
     else
@@ -196,7 +196,7 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, matchline) abort "{{{2
     let d = 9
     while d
         if table[d] != '-'
-            let backref = substitute(a:matchline, a:prefix.word.a:suffix, '\'.table[d], '')
+            let backref = substitute(a:line, a:prefix.word.a:suffix, '\'.table[d], '')
             " Are there any other characters that should be escaped?
             let backref = escape(backref, '*,:')
             exe s:ref(ini, d, 'start', 'len')
@@ -224,25 +224,25 @@ fu! matchit#next_item(fwd, mode) abort "{{{2
 
     " Second step:  set the following variables:
     "
-    "     • matchline = line on which the cursor started
-    "     • cur_col   = number of characters before match
-    "     • prefix    = regex for start of line to start of match
-    "     • suffix    = regex for end of match to end of line
+    "   • line    = line on which the cursor started
+    "   • cur_col = number of characters before match
+    "   • prefix  = regex for start of line to start of match
+    "   • suffix  = regex for end of match to end of line
 
     " Require match to end on or after the cursor and prefer it to
     " start on or before the cursor.
-    let matchline = getline(startline)
+    let line = getline(startline)
 
     " Find the match that ends on or after the cursor and set cur_col.
-    let regex = s:wholematch(matchline, s:all, startcol-1)
-    let cur_col = match(matchline, regex)
+    let regex   = s:wholematch(line, s:all, startcol-1)
+    let cur_col = match(line, regex)
     " If there is no match, give up.
     if cur_col == -1
         call s:clean_up(old_ic, a:mode)
         return
     endif
-    let end_col = matchend(matchline, regex)
-    let suf     = strlen(matchline) - end_col
+    let end_col = matchend(line, regex)
+    let suf     = strlen(line) - end_col
     let prefix  = (cur_col ? '^.*\%'.(cur_col + 1).'c\%(' : '^\%(')
     let suffix  = (suf ? '\)\%'.(end_col + 1).'c.*$' : '\)$')
 
@@ -257,14 +257,14 @@ fu! matchit#next_item(fwd, mode) abort "{{{2
     " 'while:endwhile' or whatever.  A bit of a kluge:  s:choose() returns
     " group . "," . groupBR, and we pick it apart.
 
-    let group   = s:choose(s:pat, matchline, ',', ':', prefix, suffix, s:patBR)
+    let group   = s:choose(s:pat, line, ',', ':', prefix, suffix, s:patBR)
     let i       = matchend(group, s:even_backslash.',')
     let groupBR = strpart(group, i)
     let group   = strpart(group, 0, i-1)
 
-    " Now, matchline =~ prefix . substitute(group,':','\|','g') . suffix
+    " Now, line =~ prefix . substitute(group,':','\|','g') . suffix
     if s:has_BR " Do the hard part:  resolve those backrefs!
-        let group = s:insert_refs(groupBR, prefix, group, suffix, matchline)
+        let group = s:insert_refs(groupBR, prefix, group, suffix, line)
     endif
 
     " Fourth step:  Set the arguments for searchpair().
@@ -284,13 +284,13 @@ fu! matchit#next_item(fwd, mode) abort "{{{2
     let middle = substitute(middle, s:even_backslash.'\zs\\(', '\\%(', 'g')
     let end    = substitute(end,    s:even_backslash.'\zs\\(', '\\%(', 'g')
 
-    if   a:fwd && matchline =~ prefix.end.suffix
-    \|| !a:fwd && matchline =~ prefix.start.suffix
+    if   a:fwd && line =~ prefix.end.suffix
+    \|| !a:fwd && line =~ prefix.start.suffix
         let middle = ''
     endif
 
-    let flags =  a:fwd && matchline =~ prefix.end.suffix
-            \|| !a:fwd && matchline !~ prefix.start.suffix
+    let flags =  a:fwd && line =~ prefix.end.suffix
+            \|| !a:fwd && line !~ prefix.start.suffix
             \?       'bW'
             \:       'W'
 
