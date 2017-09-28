@@ -581,7 +581,7 @@ fu! s:wholematch(line, pat, start) abort "{{{2
     return prefix.group.suffix
 endfu
 
-fu! matchit#wrapper(fwd, mode) abort range "{{{2
+fu! matchit#wrapper(fwd, mode) abort "{{{2
     let [ old_ic, startline, startcol ] = s:get_info()
 
     " Use default behavior if called with a count.
