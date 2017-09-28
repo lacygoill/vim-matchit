@@ -164,46 +164,46 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, matchline) abort "{{{2
     "   a:matchline =  "123<tag>12" or "123</tag>12"
     " then extract "tag" from a:matchline and return "<tag>:</tag>" .
 
-    if a:matchline !~ a:prefix .
-                \ substitute(a:group, s:even_backslash . '\zs:', '\\|', 'g') . a:suffix
+    if a:matchline !~ a:prefix
+                   \. substitute(a:group, s:even_backslash . '\zs:', '\\|', 'g')
+                   \. a:suffix
         return a:group
     endif
-    let i = matchend(a:groupBR, s:even_backslash . ':')
-    let ini = strpart(a:groupBR, 0, i-1)
+
+    let i      = matchend(a:groupBR, s:even_backslash . ':')
+    let ini    = strpart(a:groupBR, 0, i-1)
     let tailBR = strpart(a:groupBR, i)
-    let word = s:choose(a:group, a:matchline, ":", "", a:prefix, a:suffix,
-                \ a:groupBR)
-    let i = matchend(word, s:even_backslash . ":")
+    let word   = s:choose(a:group, a:matchline, ':', '', a:prefix, a:suffix, a:groupBR)
+    let i      = matchend(word, s:even_backslash . ":")
     let wordBR = strpart(word, i)
-    let word = strpart(word, 0, i-1)
+    let word   = strpart(word, 0, i-1)
+
     " Now, a:matchline =~ a:prefix . word . a:suffix
     if wordBR != ini
-        let table = s:resolve(ini, wordBR, "table")
+        let table = s:resolve(ini, wordBR, 'table')
     else
-        let table = ""
-        let d = 0
+        let table = ''
+        let d     = 0
         while d < 10
-            if tailBR =~ s:even_backslash . '\\' . d
-                let table = table . d
+            if tailBR =~ s:even_backslash.'\\'.d
+                let table = table.d
             else
-                let table = table . "-"
+                let table = table.'-'
             endif
-            let d = d + 1
+            let d += 1
         endwhile
     endif
     let d = 9
     while d
-        if table[d] != "-"
-            let backref = substitute(a:matchline, a:prefix.word.a:suffix,
-                        \ '\'.table[d], "")
+        if table[d] != '-'
+            let backref = substitute(a:matchline, a:prefix.word.a:suffix, '\'.table[d], '')
             " Are there any other characters that should be escaped?
             let backref = escape(backref, '*,:')
             exe s:ref(ini, d, 'start', 'len')
-            let ini = strpart(ini, 0, start) . backref . strpart(ini, start+len)
-            let tailBR = substitute(tailBR, s:even_backslash . '\zs\\' . d,
-                        \ escape(backref, '\\&'), 'g')
+            let ini     = strpart(ini, 0, start) . backref . strpart(ini, start+len)
+            let tailBR  = substitute(tailBR, s:even_backslash.'\zs\\'.d, escape(backref, '\\&'), 'g')
         endif
-        let d = d-1
+        let d -= 1
     endwhile
     return ini.':'.tailBR
 endfu
