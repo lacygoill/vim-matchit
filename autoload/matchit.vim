@@ -44,20 +44,20 @@ fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
     " if no optional arguments are given; return <patn>,<altn> if a:1 is given.
 
     let tail = (a:patterns =~ a:comma."$" ? a:patterns : a:patterns . a:comma)
-    let i = matchend(tail, s:even_backslash . a:comma)
+    let i = matchend(tail, s:even_backslash.a:comma)
     if a:0
         let alttail = (a:1 =~ a:comma."$" ? a:1 : a:1 . a:comma)
-        let j = matchend(alttail, s:even_backslash . a:comma)
+        let j = matchend(alttail, s:even_backslash.a:comma)
     endif
     let current = strpart(tail, 0, i-1)
     if a:branch == ""
         let currpat = current
     else
-        let currpat = substitute(current, s:even_backslash . a:branch, '\\|', 'g')
+        let currpat = substitute(current, s:even_backslash.a:branch, '\\|', 'g')
     endif
     while a:string !~ a:prefix . currpat . a:suffix
         let tail = strpart(tail, i)
-        let i = matchend(tail, s:even_backslash . a:comma)
+        let i = matchend(tail, s:even_backslash.a:comma)
         if i == -1
             return -1
         endif
@@ -65,11 +65,11 @@ fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
         if a:branch == ""
             let currpat = current
         else
-            let currpat = substitute(current, s:even_backslash . a:branch, '\\|', 'g')
+            let currpat = substitute(current, s:even_backslash.a:branch, '\\|', 'g')
         endif
         if a:0
             let alttail = strpart(alttail, j)
-            let j = matchend(alttail, s:even_backslash . a:comma)
+            let j = matchend(alttail, s:even_backslash.a:comma)
         endif
     endwhile
     if a:0
@@ -165,16 +165,16 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     " then extract "tag" from a:line and return "<tag>:</tag>" .
 
     if a:line !~ a:prefix
-              \. substitute(a:group, s:even_backslash . '\zs:', '\\|', 'g')
+              \. substitute(a:group, s:even_backslash.'\zs:', '\\|', 'g')
               \. a:suffix
         return a:group
     endif
 
-    let i      = matchend(a:groupBR, s:even_backslash . ':')
+    let i      = matchend(a:groupBR, s:even_backslash.':')
     let ini    = strpart(a:groupBR, 0, i-1)
     let tailBR = strpart(a:groupBR, i)
     let word   = s:choose(a:group, a:line, ':', '', a:prefix, a:suffix, a:groupBR)
-    let i      = matchend(word, s:even_backslash . ":")
+    let i      = matchend(word, s:even_backslash.':')
     let wordBR = strpart(word, i)
     let word   = strpart(word, 0, i-1)
 
@@ -224,10 +224,15 @@ fu! matchit#next_item(fwd, mode) abort "{{{2
 
     " Second step:  set the following variables:
     "
-    "   • line    = line on which the cursor started
-    "   • cur_col = number of characters before match
-    "   • prefix  = regex for start of line to start of match
-    "   • suffix  = regex for end of match to end of line
+    "   ┌─────────┬───────────────────────────────────────────┐
+    "   │ line    │ line on which the cursor started          │
+    "   ├─────────┼───────────────────────────────────────────┤
+    "   │ cur_col │ number of characters before match         │
+    "   ├─────────┼───────────────────────────────────────────┤
+    "   │ prefix  │ regex for start of line to start of match │
+    "   ├─────────┼───────────────────────────────────────────┤
+    "   │ suffix  │ regex for end of match to end of line     │
+    "   └─────────┴───────────────────────────────────────────┘
 
     " Require match to end on or after the cursor and prefer it to
     " start on or before the cursor.
@@ -495,7 +500,7 @@ fu! s:ref(string, d, ...) abort "{{{2
         let match = a:string
         while cnt
             let cnt = cnt - 1
-            let index = matchend(match, s:even_backslash . '\\(')
+            let index = matchend(match, s:even_backslash.'\\(')
             if index == -1
                 return ''
             endif
@@ -507,7 +512,7 @@ fu! s:ref(string, d, ...) abort "{{{2
         endif
         let cnt = 1
         while cnt
-            let index = matchend(match, s:even_backslash . '\\(\|\\)') - 1
+            let index = matchend(match, s:even_backslash.'\\(\|\\)') - 1
             if index == -2
                 return ''
             endif
@@ -538,7 +543,7 @@ fu! s:resolve(source, target, output) abort "{{{2
     " unless it is preceded by "\".
 
     let word  = a:target
-    let i     = matchend(word, s:even_backslash . '\\\d') - 1
+    let i     = matchend(word, s:even_backslash.'\\\d') - 1
     let table = '----------'
 
     while i != -2 " There are back references to be replaced.
@@ -631,6 +636,12 @@ fu! s:set_pat() abort "{{{2
         let match_words  = match_words.(!empty(match_words) ? ',' : '').def_words
         let s:last_words = match_words
 
+        " \2
+        " \\\2
+        " \\\\\2
+        "
+        " FIXME:
+        " Why is an even number of backslashes forbidden?
         if match_words =~ s:even_backslash.'\\\d'
             let s:has_BR = 1
             let s:pat    = s:parse_words(match_words)
