@@ -116,7 +116,6 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
             let regex   = s:wholematch(line, pat, cur_col-1)
             let end_col = matchend(line, regex)
 
-            "  This is NOT off by one!
             if end_col > cur_col
                 call cursor(0, end_col)
             endif
@@ -227,7 +226,7 @@ fu! matchit#multi(fwd, mode) abort "{{{2
 
     let [ old_ic, startline, startcol ] = s:get_info()
     call s:set_ic()
-    call s:set_some_var()
+    call s:set_pat()
 
     " Second step:  figure out the patterns for searchpair()
     " and save the screen, cursor position, and 'ignorecase'.
@@ -485,7 +484,7 @@ fu! s:set_ic() abort "{{{2
     endif
 endfu
 
-fu! s:set_some_var() abort "{{{2
+fu! s:set_pat() abort "{{{2
 
     " if not already done, set the following script variables
     "
@@ -534,7 +533,7 @@ fu! s:set_some_var() abort "{{{2
 
         " FIXME:
         " The next lines were not present in `s:MultiMatch()`.
-        " Now that we have extracted some code inside `s:set_some_var()`,
+        " Now that we have extracted some code inside `s:set_pat()`,
         " and call the latter in `MultiMatch()`, does it cause an issue
         " if we reset `s:patBR`?
 
@@ -586,6 +585,7 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     let [ old_ic, startline, startcol ] = s:get_info()
 
     " Use default behavior if called with a count.
+    " Ex:    42%  →  move cursor onto the line at 42% of the file
     if v:count
         exe 'norm! '.v:count.'%'
         call s:clean_up(old_ic, a:mode)
@@ -593,7 +593,7 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     endif
 
     call s:set_ic()
-    call s:set_some_var()
+    call s:set_pat()
 
     " Second step:  set the following variables:
     "

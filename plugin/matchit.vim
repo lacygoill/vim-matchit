@@ -16,7 +16,7 @@ ono <silent> g%    v:<c-u>call matchit#wrapper(0, 'o')<cr>
 
 " Analogues of [{ and ]} using matching patterns:
 
-nno <silent> ]%     :<c-u>let g:motion_to_repeat = ']%' <bar> call matchit#multi(1,  'n')<cr>
+nno <silent> ]%     :<c-u>let g:motion_to_repeat = ']%' <bar> call matchit#multi(1, 'n')<cr>
 nno <silent> [%     :<c-u>let g:motion_to_repeat = '[%' <bar> call matchit#multi(0, 'n')<cr>
 
 xmap         ]%     <esc>]%m'gv``
