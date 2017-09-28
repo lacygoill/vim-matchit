@@ -90,10 +90,15 @@ fu! s:clean_up(old_ic, mode, startline, startcol, ...) abort "{{{2
             " Check whether the match is a single character.  If not, move to the
             " end of the match.
             let [ matchline, cur_col ] = getpos('.')[1:2]
-            let regexp                 = s:wholematch(matchline, a:1, cur_col-1)
-            let end_col                = matchend(matchline, regexp)
+            "                                       ┌ mid.'\|'.fin
+            "                                       │ Ex:
+            "                                       │     'elseif\|endif'
+            "                                     ┌─┤
+            let regexp  = s:wholematch(matchline, a:1, cur_col-1)
+            let end_col = matchend(matchline, regexp)
 
-            if end_col > cur_col  " This is NOT off by one!
+            "  This is NOT off by one!
+            if end_col > cur_col
                 call cursor(0, end_col)
             endif
         endif
@@ -525,12 +530,16 @@ fu! s:set_some_var() abort "{{{2
     endif
 endfu
 
-fu! s:wholematch(string, pat, start) abort "{{{2
+fu! s:wholematch(line, pat, start) abort "{{{2
+
+    " NOTE:
+    " I think that the purpose of this function is to tweak a regex so that
+    " its first match is near the current cursor position.
 
     " TODO: What should I do if a:start is out of range?
     "
-    " Return a regexp that matches all of a:string, such that
-    " matchstr(a:string, regexp) represents the match for a:pat that starts
+    " Return a regexp that matches all of a:line, such that
+    " matchstr(a:line, regexp) represents the match for a:pat that starts
     " as close to a:start as possible, before being preferred to after, and
     " ends after a:start .
 
@@ -540,16 +549,19 @@ fu! s:wholematch(string, pat, start) abort "{{{2
     "         let j      = matchend(getline('.'), pat)
     "         let match  = matchstr(getline('.'), pat)
 
-    let group  = '\%('.a:pat.'\)'
+    let len = strlen(a:line)
+
     let prefix = a:start
-              \?     '\(^.*\%<'.(a:start + 2).'c\)\zs'
+              \?     '\%<'.(a:start + 2).'c\zs'
               \:     '^'
-    let len    = strlen(a:string)
+
+    let group = '\%('.a:pat.'\)'
+
     let suffix = a:start+1 < len
               \?     '\(\%>'.(a:start+1).'c.*$\)\@='
               \:     '$'
 
-    if a:string !~ prefix.group.suffix
+    if a:line !~ prefix.group.suffix
         let prefix = ''
     endif
     return prefix.group.suffix
