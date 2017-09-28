@@ -78,9 +78,13 @@ fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
     return current
 endfu
 
-fu! s:clean_up(old_ic, mode, startline, startcol, ...) abort "{{{2
+fu! s:clean_up(old_ic, mode, ...) abort "{{{2
     " Restore options and do some special handling for Operator-pending mode.
     " The optional argument is the tail of the matching group.
+
+    if a:0
+        let [ startline, startcol, pat ]  = a:000
+    endif
 
     exe 'set '.(a:old_ic ?  'ic' : 'noic')
 
@@ -93,9 +97,8 @@ fu! s:clean_up(old_ic, mode, startline, startcol, ...) abort "{{{2
         " (for example, d%).
         " This is only a problem if we end up moving in the forward direction.
 
-    elseif a:startline < line('.')
-    \||    a:startline == line('.') && a:startcol < col('.')
-        if a:0
+    elseif a:0 && ( startline < line('.')
+    \||             startline == line('.') && startcol < col('.'))
             " Check whether the match is a single character.  If not, move to the
             " end of the match.
             let [ matchline, cur_col ] = getpos('.')[1:2]
@@ -103,14 +106,13 @@ fu! s:clean_up(old_ic, mode, startline, startcol, ...) abort "{{{2
             "                                       │ Ex:
             "                                       │     'elseif\|endif'
             "                                     ┌─┤
-            let regex   = s:wholematch(matchline, a:1, cur_col-1)
+            let regex   = s:wholematch(matchline, pat, cur_col-1)
             let end_col = matchend(matchline, regex)
 
             "  This is NOT off by one!
             if end_col > cur_col
                 call cursor(0, end_col)
             endif
-        endif
     endif
 endfu
 
@@ -285,12 +287,12 @@ fu! matchit#multi(fwd, mode) abort "{{{2
     mark '
     while level
         if searchpair(start, '', end, (a:fwd ? 'W' : 'bW'), skip) < 1
-            call s:clean_up(old_ic, a:mode, startline, startcol)
+            call s:clean_up(old_ic, a:mode)
             return
         endif
         let level -= 1
     endwhile
-    call s:clean_up(old_ic, a:mode, startline, startcol)
+    call s:clean_up(old_ic, a:mode)
 endfu
 
 fu! s:parse_skip(str) abort "{{{2
@@ -582,7 +584,7 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     " Use default behavior if called with a count.
     if v:count
         exe 'norm! '.v:count.'%'
-        call s:clean_up(old_ic, a:mode, startline, startcol)
+        call s:clean_up(old_ic, a:mode)
         return
     endif
 
@@ -604,7 +606,7 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     let cur_col = match(matchline, regex)
     " If there is no match, give up.
     if cur_col == -1
-        call s:clean_up(old_ic, a:mode, startline, startcol)
+        call s:clean_up(old_ic, a:mode)
         return
     endif
     let end_col = matchend(matchline, regex)
