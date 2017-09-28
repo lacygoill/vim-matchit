@@ -560,7 +560,7 @@ fu! s:wholematch(string, pat, start) abort "{{{2
     return prefix.group.suffix
 endfu
 
-fu! matchit#wrapper(forward, mode) abort range "{{{2
+fu! matchit#wrapper(fwd, mode) abort range "{{{2
     let opt_save = s:options_save()
 
     " In s:clean_up(), we may need to check whether the cursor moved forward.
@@ -637,14 +637,14 @@ fu! matchit#wrapper(forward, mode) abort range "{{{2
     let fin = substitute(fin, s:even_backslash . '\zs\\(', '\\%(', 'g')
 
     " Set mid.  This is optimized for readability, not micro-efficiency!
-    if a:forward   && matchline =~ prefix.fin.suffix
-    \|| !a:forward && matchline =~ prefix.ini.suffix
+    if a:fwd   && matchline =~ prefix.fin.suffix
+    \|| !a:fwd && matchline =~ prefix.ini.suffix
         let mid = ''
     endif
     " Set flag.  This is optimized for readability, not micro-efficiency!
-    if  a:forward
+    if  a:fwd
     \&& matchline =~ prefix.fin.suffix
-    \|| !a:forward && matchline !~ prefix.ini.suffix
+    \|| !a:fwd && matchline !~ prefix.ini.suffix
         let flag = 'bW'
     else
         let flag = 'W'
