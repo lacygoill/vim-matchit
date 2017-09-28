@@ -94,8 +94,8 @@ fu! s:clean_up(old_ic, mode, startline, startcol, ...) abort "{{{2
             "                                       │ Ex:
             "                                       │     'elseif\|endif'
             "                                     ┌─┤
-            let regexp  = s:wholematch(matchline, a:1, cur_col-1)
-            let end_col = matchend(matchline, regexp)
+            let regex   = s:wholematch(matchline, a:1, cur_col-1)
+            let end_col = matchend(matchline, regex)
 
             "  This is NOT off by one!
             if end_col > cur_col
@@ -476,7 +476,7 @@ fu! s:set_some_var() abort "{{{2
     "         ├──────────┼──────────────────────────────────────────────┤
     "         │ s:pat    │ parsed version of b:match_words              │
     "         ├──────────┼──────────────────────────────────────────────┤
-    "         │ s:all    │ regexp based on s:pat and the default groups │
+    "         │ s:all    │ regex based on s:pat and the default groups │
     "         └──────────┴──────────────────────────────────────────────┘
 
     let match_words = get(b:, 'match_words', '')
@@ -538,8 +538,8 @@ fu! s:wholematch(line, pat, start) abort "{{{2
 
     " TODO: What should I do if a:start is out of range?
     "
-    " Return a regexp that matches all of a:line, such that
-    " matchstr(a:line, regexp) represents the match for a:pat that starts
+    " Return a regex that matches all of a:line, such that
+    " matchstr(a:line, regex) represents the match for a:pat that starts
     " as close to a:start as possible, before being preferred to after, and
     " ends after a:start .
 
@@ -586,22 +586,22 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     "
     "     • matchline = line on which the cursor started
     "     • cur_col   = number of characters before match
-    "     • prefix    = regexp for start of line to start of match
-    "     • suffix    = regexp for end of match to end of line
+    "     • prefix    = regex for start of line to start of match
+    "     • suffix    = regex for end of match to end of line
 
     " Require match to end on or after the cursor and prefer it to
     " start on or before the cursor.
     let matchline = getline(startline)
 
     " Find the match that ends on or after the cursor and set cur_col.
-    let regexp = s:wholematch(matchline, s:all, startcol-1)
-    let cur_col = match(matchline, regexp)
+    let regex = s:wholematch(matchline, s:all, startcol-1)
+    let cur_col = match(matchline, regex)
     " If there is no match, give up.
     if cur_col == -1
         call s:clean_up(old_ic, a:mode, startline, startcol)
         return
     endif
-    let end_col = matchend(matchline, regexp)
+    let end_col = matchend(matchline, regex)
     let suf     = strlen(matchline) - end_col
     let prefix  = (cur_col ? '^.*\%'.(cur_col + 1).'c\%(' : '^\%(')
     let suffix  = (suf ? '\)\%'.(end_col + 1).'c.*$' : '\)$')
