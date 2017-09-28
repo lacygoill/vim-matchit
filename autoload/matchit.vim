@@ -3,6 +3,15 @@ if exists('g:autoloaded_matchit')
 endif
 let g:autoloaded_matchit = 1
 
+" FIXME:
+" `[%` (&friends) should ignore triple curly braces
+" They don't, probably because of 'mps' which contains `{:}`.
+"
+" To match a curly brace outside a folding marker, use these patterns:
+"
+"     \%({\@<={{\@=\)\@!\&\%({{\)\@<!{\%({{\)\@!
+"     \%(}\@<=}}\@=\)\@!\&\%(}}\)\@<!}\%(}}\)\@!
+
 " TODO:
 " We should store the tokens in a list not in a string.
 " This would allow us to get rid of things like `!empty(…) ? ',' : ''`
@@ -187,7 +196,7 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, matchline) abort "{{{2
 endfu
 
 fu! matchit#multi(fwd, mode) abort "{{{2
-    " Jump to the nearest unmatched:
+    " Jump to the nearest unbalanced:
     "
     "         • (
     "         • if
@@ -481,22 +490,19 @@ fu! s:set_some_var() abort "{{{2
 
     let match_words = get(b:, 'match_words', '')
 
-    "             ┌─ default pairs stored in 'mps'
-    "             │
-    "             │         ┌─ C-style comment (to mimic `%`)
-    "             │         │                                                  ┌ C preprocessor conditionals
-    "             │         │                                                  │ (to mimic `%`)
-    " ┌───────────┤ ┌───────┤ ┌────────────────────────────────────────────────┤
-    " (:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>
-
-    let def_words = escape(&l:mps, '[^$.*~\/?]').(!empty(&l:mps) ? ',' : '')
-                 \. '\/\*:\*\/'
-                 \. ',#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>'
-
     if match_words != s:last_words || &l:mps != s:last_mps
         " quote the special chars in 'matchpairs'
-        " replace [,:] with \|
         " append the pairs: /*, */    #if:#ifdef,#else:#elif,#endif
+        " replace [,:] with \|
+
+        "             ┌─ default pairs stored in 'mps'
+        "             │
+        "             │         ┌─ C-style comment (to mimic `%`)
+        "             │         │                                                  ┌ C preprocessor conditionals
+        "             │         │                                                  │ (to mimic `%`)
+        " ┌───────────┤ ┌───────┤ ┌────────────────────────────────────────────────┤
+        " (:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>
+
         let def_words = escape(&l:mps, '[^$.*~\/?]')
                      \. (!empty(&l:mps) ? ',' : '')
                      \. '\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>'
@@ -635,24 +641,24 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     let end    = strpart(group, j)
 
     "Un-escape the remaining , and : characters.
-    let start  = substitute(start, s:even_backslash . '\zs\\\(:\|,\)', '\1', 'g')
-    let middle = substitute(middle, s:even_backslash . '\zs\\\(:\|,\)', '\1', 'g')
-    let end    = substitute(end, s:even_backslash . '\zs\\\(:\|,\)', '\1', 'g')
+    let start  = substitute(start,  s:even_backslash.'\zs\\\(:\|,\)', '\1', 'g')
+    let middle = substitute(middle, s:even_backslash.'\zs\\\(:\|,\)', '\1', 'g')
+    let end    = substitute(end,    s:even_backslash.'\zs\\\(:\|,\)', '\1', 'g')
 
     " searchpair() requires that these patterns avoid \(\) groups.
-    let start  = substitute(start, s:even_backslash . '\zs\\(', '\\%(', 'g')
-    let middle = substitute(middle, s:even_backslash . '\zs\\(', '\\%(', 'g')
-    let end    = substitute(end, s:even_backslash . '\zs\\(', '\\%(', 'g')
+    let start  = substitute(start,  s:even_backslash.'\zs\\(', '\\%(', 'g')
+    let middle = substitute(middle, s:even_backslash.'\zs\\(', '\\%(', 'g')
+    let end    = substitute(end,    s:even_backslash.'\zs\\(', '\\%(', 'g')
 
     if   a:fwd && matchline =~ prefix.end.suffix
     \|| !a:fwd && matchline =~ prefix.start.suffix
         let middle = ''
     endif
 
-    let flag =  a:fwd && matchline =~ prefix.end.suffix
-          \||  !a:fwd && matchline !~ prefix.start.suffix
-          \?        'bW'
-          \:        'W'
+    let flags =  a:fwd && matchline =~ prefix.end.suffix
+            \|| !a:fwd && matchline !~ prefix.start.suffix
+            \?       'bW'
+            \:       'W'
 
     let skip = get(b:, 'match_skip', 's:comment\|string')
     let skip = s:parse_skip(skip)
@@ -666,7 +672,7 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     else
         exe 'if '.skip."| let skip = '0' | endif"
     endif
-    let sp_return = searchpair(start, middle, end, flag, skip)
+    let sp_return = searchpair(start, middle, end, flags, skip)
     let final_position = 'call cursor('.line('.').','.col('.').')'
     " Restore cursor position and original screen.
     call winrestview(view)
