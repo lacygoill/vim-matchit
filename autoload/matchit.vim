@@ -636,20 +636,16 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     let mid = substitute(mid, s:even_backslash . '\zs\\(', '\\%(', 'g')
     let fin = substitute(fin, s:even_backslash . '\zs\\(', '\\%(', 'g')
 
-    " Set mid.  This is optimized for readability, not micro-efficiency!
-    if a:fwd   && matchline =~ prefix.fin.suffix
+    if   a:fwd && matchline =~ prefix.fin.suffix
     \|| !a:fwd && matchline =~ prefix.ini.suffix
         let mid = ''
     endif
-    " Set flag.  This is optimized for readability, not micro-efficiency!
-    if  a:fwd
-    \&& matchline =~ prefix.fin.suffix
-    \|| !a:fwd && matchline !~ prefix.ini.suffix
-        let flag = 'bW'
-    else
-        let flag = 'W'
-    endif
-    " Set skip.
+
+    let flag =  a:fwd && matchline =~ prefix.fin.suffix
+          \||  !a:fwd && matchline !~ prefix.ini.suffix
+          \?        'bW'
+          \:        'W'
+
     let skip = get(b:, 'match_skip', 's:comment\|string')
     let skip = s:parse_skip(skip)
 
