@@ -208,8 +208,117 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, matchline) abort "{{{2
     return ini.':'.tailBR
 endfu
 
-fu! matchit#multi(fwd, mode) abort "{{{2
-    " Jump to the nearest unbalanced:
+fu! matchit#next_item(fwd, mode) abort "{{{2
+    let [ old_ic, startline, startcol ] = s:get_info()
+
+    " Use default behavior if called with a count.
+    " Ex:    42%  →  move cursor onto the line at 42% of the file
+    if v:count
+        exe 'norm! '.v:count.'%'
+        call s:clean_up(old_ic, a:mode)
+        return
+    endif
+
+    call s:set_ic()
+    call s:set_pat()
+
+    " Second step:  set the following variables:
+    "
+    "     • matchline = line on which the cursor started
+    "     • cur_col   = number of characters before match
+    "     • prefix    = regex for start of line to start of match
+    "     • suffix    = regex for end of match to end of line
+
+    " Require match to end on or after the cursor and prefer it to
+    " start on or before the cursor.
+    let matchline = getline(startline)
+
+    " Find the match that ends on or after the cursor and set cur_col.
+    let regex = s:wholematch(matchline, s:all, startcol-1)
+    let cur_col = match(matchline, regex)
+    " If there is no match, give up.
+    if cur_col == -1
+        call s:clean_up(old_ic, a:mode)
+        return
+    endif
+    let end_col = matchend(matchline, regex)
+    let suf     = strlen(matchline) - end_col
+    let prefix  = (cur_col ? '^.*\%'.(cur_col + 1).'c\%(' : '^\%(')
+    let suffix  = (suf ? '\)\%'.(end_col + 1).'c.*$' : '\)$')
+
+    " Third step:  Find the group and single word that match, and the original
+    " (backref) versions of these.  Then, resolve the backrefs.
+    " Set the following local variable:
+    "
+    "         group = colon-separated list of patterns, one of which matches
+    "               = start:middle:end or start:end
+    "
+    " Now, set group and groupBR to the matching group: 'if:endif' or
+    " 'while:endwhile' or whatever.  A bit of a kluge:  s:choose() returns
+    " group . "," . groupBR, and we pick it apart.
+
+    let group   = s:choose(s:pat, matchline, ',', ':', prefix, suffix, s:patBR)
+    let i       = matchend(group, s:even_backslash.',')
+    let groupBR = strpart(group, i)
+    let group   = strpart(group, 0, i-1)
+
+    " Now, matchline =~ prefix . substitute(group,':','\|','g') . suffix
+    if s:has_BR " Do the hard part:  resolve those backrefs!
+        let group = s:insert_refs(groupBR, prefix, group, suffix, matchline)
+    endif
+
+    " Fourth step:  Set the arguments for searchpair().
+    let i      = matchend(group, s:even_backslash.':')
+    let j      = matchend(group, '.*'.s:even_backslash.':')
+    let start  = strpart(group, 0, i-1)
+    let middle = substitute(strpart(group, i,j-i-1), s:even_backslash.'\zs:', '\\|', 'g')
+    let end    = strpart(group, j)
+
+    "Un-escape the remaining , and : characters.
+    let start  = substitute(start,  s:even_backslash.'\zs\\\(:\|,\)', '\1', 'g')
+    let middle = substitute(middle, s:even_backslash.'\zs\\\(:\|,\)', '\1', 'g')
+    let end    = substitute(end,    s:even_backslash.'\zs\\\(:\|,\)', '\1', 'g')
+
+    " searchpair() requires that these patterns avoid \(\) groups.
+    let start  = substitute(start,  s:even_backslash.'\zs\\(', '\\%(', 'g')
+    let middle = substitute(middle, s:even_backslash.'\zs\\(', '\\%(', 'g')
+    let end    = substitute(end,    s:even_backslash.'\zs\\(', '\\%(', 'g')
+
+    if   a:fwd && matchline =~ prefix.end.suffix
+    \|| !a:fwd && matchline =~ prefix.start.suffix
+        let middle = ''
+    endif
+
+    let flags =  a:fwd && matchline =~ prefix.end.suffix
+            \|| !a:fwd && matchline !~ prefix.start.suffix
+            \?       'bW'
+            \:       'W'
+
+    let skip = get(b:, 'match_skip', 's:comment\|string')
+    let skip = s:parse_skip(skip)
+
+    " Fifth step:  actually start moving the cursor and call searchpair().
+    " Later, :exe restore_cursor to get to the original screen.
+    let view = winsaveview()
+    call cursor(0, cur_col + 1)
+    if skip =~ 'synID' && !exists('g:syntax_on')
+        let skip = '0'
+    else
+        exe 'if '.skip."| let skip = '0' | endif"
+    endif
+    let sp_return = searchpair(start, middle, end, flags, skip)
+    let final_position = 'call cursor('.line('.').','.col('.').')'
+    " Restore cursor position and original screen.
+    call winrestview(view)
+    norm! m'
+    if sp_return > 0
+        exe final_position
+    endif
+    call s:clean_up(old_ic, a:mode, startline, startcol, middle.'\|'.end)
+endfu
+
+fu! matchit#next_unmatched(fwd, mode) abort "{{{2
+    " Jump to the nearest unmatched:
     "
     "         • (
     "         • if
@@ -388,22 +497,22 @@ fu! s:ref(string, d, ...) abort "{{{2
             let cnt = cnt - 1
             let index = matchend(match, s:even_backslash . '\\(')
             if index == -1
-                return ""
+                return ''
             endif
             let match = strpart(match, index)
         endwhile
         let start = len - strlen(match)
-        if a:0 == 1 && a:1 == "start"
+        if a:0 == 1 && a:1 == 'start'
             return start - 2
         endif
         let cnt = 1
         while cnt
             let index = matchend(match, s:even_backslash . '\\(\|\\)') - 1
             if index == -2
-                return ""
+                return ''
             endif
             " Increment if an open, decrement if a ')':
-            let cnt = cnt + (match[index]=="(" ? 1 : -1)  " ')'
+            let cnt = cnt + ( match[index] == '(' ? 1 : -1 )  " ')'
             " let cnt = stridx('0(', match[index]) + cnt
             let match = strpart(match, index+1)
         endwhile
@@ -413,7 +522,7 @@ fu! s:ref(string, d, ...) abort "{{{2
     if a:0 == 1
         return len
     elseif a:0 == 2
-        return "let " . a:1 . "=" . start . "| let " . a:2 . "=" . len
+        return 'let '.a:1.'='.start.'| let '.a:2.'='.len
     else
         return strpart(a:string, start, len)
     endif
@@ -430,7 +539,7 @@ fu! s:resolve(source, target, output) abort "{{{2
 
     let word  = a:target
     let i     = matchend(word, s:even_backslash . '\\\d') - 1
-    let table = "----------"
+    let table = '----------'
 
     while i != -2 " There are back references to be replaced.
         let d = word[i]
@@ -493,7 +602,7 @@ fu! s:set_pat() abort "{{{2
     "         ├──────────┼──────────────────────────────────────────────┤
     "         │ s:pat    │ parsed version of b:match_words              │
     "         ├──────────┼──────────────────────────────────────────────┤
-    "         │ s:all    │ regex based on s:pat and the default groups │
+    "         │ s:all    │ regex based on s:pat and the default groups  │
     "         └──────────┴──────────────────────────────────────────────┘
 
     let match_words = get(b:, 'match_words', '')
@@ -579,115 +688,6 @@ fu! s:wholematch(line, pat, start) abort "{{{2
         let prefix = ''
     endif
     return prefix.group.suffix
-endfu
-
-fu! matchit#wrapper(fwd, mode) abort "{{{2
-    let [ old_ic, startline, startcol ] = s:get_info()
-
-    " Use default behavior if called with a count.
-    " Ex:    42%  →  move cursor onto the line at 42% of the file
-    if v:count
-        exe 'norm! '.v:count.'%'
-        call s:clean_up(old_ic, a:mode)
-        return
-    endif
-
-    call s:set_ic()
-    call s:set_pat()
-
-    " Second step:  set the following variables:
-    "
-    "     • matchline = line on which the cursor started
-    "     • cur_col   = number of characters before match
-    "     • prefix    = regex for start of line to start of match
-    "     • suffix    = regex for end of match to end of line
-
-    " Require match to end on or after the cursor and prefer it to
-    " start on or before the cursor.
-    let matchline = getline(startline)
-
-    " Find the match that ends on or after the cursor and set cur_col.
-    let regex = s:wholematch(matchline, s:all, startcol-1)
-    let cur_col = match(matchline, regex)
-    " If there is no match, give up.
-    if cur_col == -1
-        call s:clean_up(old_ic, a:mode)
-        return
-    endif
-    let end_col = matchend(matchline, regex)
-    let suf     = strlen(matchline) - end_col
-    let prefix  = (cur_col ? '^.*\%'.(cur_col + 1).'c\%(' : '^\%(')
-    let suffix  = (suf ? '\)\%'.(end_col + 1).'c.*$' : '\)$')
-
-    " Third step:  Find the group and single word that match, and the original
-    " (backref) versions of these.  Then, resolve the backrefs.
-    " Set the following local variable:
-    "
-    "         group = colon-separated list of patterns, one of which matches
-    "               = start:middle:end or start:end
-    "
-    " Now, set group and groupBR to the matching group: 'if:endif' or
-    " 'while:endwhile' or whatever.  A bit of a kluge:  s:choose() returns
-    " group . "," . groupBR, and we pick it apart.
-
-    let group   = s:choose(s:pat, matchline, ',', ':', prefix, suffix, s:patBR)
-    let i       = matchend(group, s:even_backslash.',')
-    let groupBR = strpart(group, i)
-    let group   = strpart(group, 0, i-1)
-
-    " Now, matchline =~ prefix . substitute(group,':','\|','g') . suffix
-    if s:has_BR " Do the hard part:  resolve those backrefs!
-        let group = s:insert_refs(groupBR, prefix, group, suffix, matchline)
-    endif
-
-    " Fourth step:  Set the arguments for searchpair().
-    let i      = matchend(group, s:even_backslash.':')
-    let j      = matchend(group, '.*'.s:even_backslash.':')
-    let start  = strpart(group, 0, i-1)
-    let middle = substitute(strpart(group, i,j-i-1), s:even_backslash.'\zs:', '\\|', 'g')
-    let end    = strpart(group, j)
-
-    "Un-escape the remaining , and : characters.
-    let start  = substitute(start,  s:even_backslash.'\zs\\\(:\|,\)', '\1', 'g')
-    let middle = substitute(middle, s:even_backslash.'\zs\\\(:\|,\)', '\1', 'g')
-    let end    = substitute(end,    s:even_backslash.'\zs\\\(:\|,\)', '\1', 'g')
-
-    " searchpair() requires that these patterns avoid \(\) groups.
-    let start  = substitute(start,  s:even_backslash.'\zs\\(', '\\%(', 'g')
-    let middle = substitute(middle, s:even_backslash.'\zs\\(', '\\%(', 'g')
-    let end    = substitute(end,    s:even_backslash.'\zs\\(', '\\%(', 'g')
-
-    if   a:fwd && matchline =~ prefix.end.suffix
-    \|| !a:fwd && matchline =~ prefix.start.suffix
-        let middle = ''
-    endif
-
-    let flags =  a:fwd && matchline =~ prefix.end.suffix
-            \|| !a:fwd && matchline !~ prefix.start.suffix
-            \?       'bW'
-            \:       'W'
-
-    let skip = get(b:, 'match_skip', 's:comment\|string')
-    let skip = s:parse_skip(skip)
-
-    " Fifth step:  actually start moving the cursor and call searchpair().
-    " Later, :exe restore_cursor to get to the original screen.
-    let view = winsaveview()
-    call cursor(0, cur_col + 1)
-    if skip =~ 'synID' && !exists('g:syntax_on')
-        let skip = '0'
-    else
-        exe 'if '.skip."| let skip = '0' | endif"
-    endif
-    let sp_return = searchpair(start, middle, end, flags, skip)
-    let final_position = 'call cursor('.line('.').','.col('.').')'
-    " Restore cursor position and original screen.
-    call winrestview(view)
-    norm! m'
-    if sp_return > 0
-        exe final_position
-    endif
-    call s:clean_up(old_ic, a:mode, startline, startcol, middle.'\|'.end)
 endfu
 
 " Variables {{{1
