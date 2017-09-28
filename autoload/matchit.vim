@@ -13,12 +13,12 @@ let g:autoloaded_matchit = 1
 "     \%(}\@<=}}\@=\)\@!\&\%(}}\)\@<!}\%(}}\)\@!
 
 " TODO:
-" We should store the tokens in a list not in a string.
+" We should store the words in a list not in a string.
 " This would allow us to get rid of things like `!empty(…) ? ',' : ''`
 
 " TODO:
 " Look at the comments in the original plugin. Search for `Autocomplete()`.
-" The author wanted to implement a function which completes a token.
+" The author wanted to implement a function which completes a word.
 " If it's useful, try to finish what he began. Or re-implement it entirely.
 
 " TODO:
@@ -245,7 +245,7 @@ fu! matchit#next_word(fwd, mode) abort "{{{2
     let line = getline(startline)
 
     " Find the match that ends on or after the cursor and set cur_col.
-    let regex   = s:wholematch(line, s:all_tokens, startcol-1)
+    let regex   = s:wholematch(line, s:all_words, startcol-1)
     let cur_col = match(line, regex)
     " If there is no match, give up.
     if cur_col == -1
@@ -621,7 +621,7 @@ fu! s:set_pat() abort "{{{2
     "         │ s:pat        │ parsed version of b:match_words     │
     "         │              │                 + def_words         │
     "         ├──────────────┼─────────────────────────────────────┤
-    "         │ s:all_tokens │ conversion of `s:pat` into a regex  │
+    "         │ s:all_words  │ conversion of `s:pat` into a regex  │
     "         └──────────────┴─────────────────────────────────────┘
 
     let match_words = get(b:, 'match_words', '')
@@ -678,7 +678,7 @@ fu! s:set_pat() abort "{{{2
             let s:has_BR = 0
             let s:pat    = match_words
         endif
-        let s:all_tokens = '\%('.substitute(s:pat, s:even_backslash.'\zs[,:]\+', '\\|', 'g').'\)'
+        let s:all_words = '\%('.substitute(s:pat, s:even_backslash.'\zs[,:]\+', '\\|', 'g').'\)'
 
         " FIXME:
         " The next lines were not present in `s:MultiMatch()`.
