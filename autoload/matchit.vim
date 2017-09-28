@@ -69,15 +69,11 @@ fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
     return current
 endfu
 
-fu! s:clean_up(options, mode, startline, startcol, ...) abort "{{{2
+fu! s:clean_up(old_ic, mode, startline, startcol, ...) abort "{{{2
     " Restore options and do some special handling for Operator-pending mode.
     " The optional argument is the tail of the matching group.
 
-    if !empty(a:options)
-        exe 'set '.(has_key(a:options, 'ic') ? (a:options.ic ? '' : 'no').'ic' : '')
-        \.         ' '
-        \.         (has_key(a:options, 've') ? 've='.a:options.ve : '')
-    endif
+    exe 'set '.(a:old_ic ?  'ic' : 'noic')
 
     " Open folds, if appropriate.
     if a:mode != 'o'
@@ -201,7 +197,7 @@ fu! matchit#multi(flags, mode) abort "{{{2
     endif
     let level = v:count1
 
-    let opt_save = s:options_save()
+    let old_ic = s:save_and_set_ic()
     let [ startline, startcol ] = getpos('.')[1:2]
 
     call s:set_some_var()
@@ -275,25 +271,12 @@ fu! matchit#multi(flags, mode) abort "{{{2
     mark '
     while level
         if searchpair(start, '', end, a:flags, skip) < 1
-            call s:clean_up(opt_save, a:mode, startline, startcol)
+            call s:clean_up(old_ic, a:mode, startline, startcol)
             return
         endif
         let level -= 1
     endwhile
-    call s:clean_up(opt_save, a:mode, startline, startcol)
-endfu
-
-fu! s:options_save() abort "{{{2
-    let opt_save = {}
-
-    " If we've set up `b:match_ignorecase` differently than `&ignorecase`,
-    " then save the latter, before resetting it according to `b:match_ignorecase`.
-    if exists('b:match_ignorecase') && b:match_ignorecase != &ic
-        let opt_save.ic = &ic
-        let &ic         = b:match_ignorecase
-    endif
-
-    return opt_save
+    call s:clean_up(old_ic, a:mode, startline, startcol)
 endfu
 
 fu! s:parse_skip(str) abort "{{{2
@@ -467,6 +450,18 @@ fu! s:resolve(source, target, output) abort "{{{2
     endif
 endfu
 
+fu! s:save_and_set_ic() abort "{{{2
+    let old_ic = &l:ic
+
+    " If we've set up `b:match_ignorecase` differently than `&ignorecase`,
+    " then save the latter, before resetting it according to `b:match_ignorecase`.
+    if exists('b:match_ignorecase') && b:match_ignorecase != &ic
+        let &ic = b:match_ignorecase
+    endif
+
+    return old_ic
+endfu
+
 fu! s:set_some_var() abort "{{{2
 
     " if not already done, set the following script variables
@@ -561,14 +556,15 @@ fu! s:wholematch(string, pat, start) abort "{{{2
 endfu
 
 fu! matchit#wrapper(fwd, mode) abort range "{{{2
-    let opt_save = s:options_save()
+    let old_ic = s:save_and_set_ic()
 
     " In s:clean_up(), we may need to check whether the cursor moved forward.
     let [ startline, startcol ] = getpos('.')[1:2]
+
     " Use default behavior if called with a count.
     if v:count
         exe 'norm! '.v:count.'%'
-        call s:clean_up(opt_save, a:mode, startline, startcol)
+        call s:clean_up(old_ic, a:mode, startline, startcol)
         return
     endif
 
@@ -590,7 +586,7 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     let cur_col = match(matchline, regexp)
     " If there is no match, give up.
     if cur_col == -1
-        call s:clean_up(opt_save, a:mode, startline, startcol)
+        call s:clean_up(old_ic, a:mode, startline, startcol)
         return
     endif
     let end_col = matchend(matchline, regexp)
@@ -666,7 +662,7 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
     if sp_return > 0
         exe final_position
     endif
-    call s:clean_up(opt_save, a:mode, startline, startcol, mid.'\|'.fin)
+    call s:clean_up(old_ic, a:mode, startline, startcol, mid.'\|'.fin)
 endfu
 
 " Variables {{{1
