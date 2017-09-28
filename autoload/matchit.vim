@@ -94,10 +94,13 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
         if &foldopen =~ 'percent'
             norm! zv
         endif
-        " In Operator-pending mode, we want to include the whole match
-        " (for example, d%).
-        " This is only a problem if we end up moving in the forward direction.
 
+    " In Operator-pending mode, we want to include the whole match
+    " For example, if we're on the keyword `function` in a Vim file,
+    " the function has a `return` statement, and we hit `y%`, we should yank
+    " the whole keyword `return`, not just its first character `r`.
+    "
+    " This is only a problem if we end up moving in the forward direction.
     elseif a:0 && ( startline < cur_line
     \||             startline == cur_line && startcol < cur_col)
 
@@ -146,6 +149,11 @@ fu! s:count(string, pattern, ...) abort "{{{2
         let index  = matchend(foo, pat)
     endwhile
     return result
+endfu
+
+fu! s:get_info() abort "{{{2
+    " In s:clean_up(), we may need to check whether the cursor moved forward.
+    return [ &l:ic, line('.'), col('.') ]
 endfu
 
 fu! s:insert_refs(groupBR, prefix, group, suffix, matchline) abort "{{{2
@@ -217,9 +225,8 @@ fu! matchit#multi(fwd, mode) abort "{{{2
     endif
     let level = v:count1
 
-    let old_ic = s:save_and_set_ic()
-    let [ startline, startcol ] = getpos('.')[1:2]
-
+    let [ old_ic, startline, startcol ] = s:get_info()
+    call s:set_ic()
     call s:set_some_var()
 
     " Second step:  figure out the patterns for searchpair()
@@ -470,16 +477,12 @@ fu! s:resolve(source, target, output) abort "{{{2
     endif
 endfu
 
-fu! s:save_and_set_ic() abort "{{{2
-    let old_ic = &l:ic
-
+fu! s:set_ic() abort "{{{2
     " If we've set up `b:match_ignorecase` differently than `&ignorecase`,
     " then save the latter, before resetting it according to `b:match_ignorecase`.
     if exists('b:match_ignorecase') && b:match_ignorecase != &ic
         let &ic = b:match_ignorecase
     endif
-
-    return old_ic
 endfu
 
 fu! s:set_some_var() abort "{{{2
@@ -580,10 +583,7 @@ fu! s:wholematch(line, pat, start) abort "{{{2
 endfu
 
 fu! matchit#wrapper(fwd, mode) abort range "{{{2
-    let old_ic = s:save_and_set_ic()
-
-    " In s:clean_up(), we may need to check whether the cursor moved forward.
-    let [ startline, startcol ] = getpos('.')[1:2]
+    let [ old_ic, startline, startcol ] = s:get_info()
 
     " Use default behavior if called with a count.
     if v:count
@@ -592,6 +592,7 @@ fu! matchit#wrapper(fwd, mode) abort range "{{{2
         return
     endif
 
+    call s:set_ic()
     call s:set_some_var()
 
     " Second step:  set the following variables:
