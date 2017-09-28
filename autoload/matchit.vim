@@ -186,7 +186,7 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, matchline) abort "{{{2
     return ini.':'.tailBR
 endfu
 
-fu! matchit#multi(flags, mode) abort "{{{2
+fu! matchit#multi(fwd, mode) abort "{{{2
     " Jump to the nearest unmatched:
     "
     "         • (
@@ -275,7 +275,7 @@ fu! matchit#multi(flags, mode) abort "{{{2
 
     mark '
     while level
-        if searchpair(start, '', end, a:flags, skip) < 1
+        if searchpair(start, '', end, (a:fwd ? 'W' : 'bW'), skip) < 1
             call s:clean_up(old_ic, a:mode, startline, startcol)
             return
         endif
