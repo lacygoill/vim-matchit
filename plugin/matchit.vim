@@ -27,4 +27,6 @@ ono <silent> [%    v:<c-u>call matchit#next_unmatched('bW', 'o')<cr>
 
 " Text object:
 
+" TODO:
+" get rid of `v_a%` in vimrc?
 xmap a% o<esc>[%v%

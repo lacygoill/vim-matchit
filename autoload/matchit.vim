@@ -658,16 +658,14 @@ fu! s:set_pat() abort "{{{2
         " in front of a digit.
         "
         " To check this pattern is present inside `match_words`, we need a regex.
-        " But in a regex, each real backslash must be doubled.
-        " So, in the regex, there needs to be an EVEN number of backslashes
-        " in front of `\d`.
         " An even number of backslashes can be expressed with `s:even_backslash`.
-        " But `s:even_backslash` can match 0 backslash, which we don't want.
-        " Why?
-        " Because 0 is not the double of an odd number, it's just the double of 0 (even).
-        " We need a NON-ZERO and even number of backslashes in front of `\d`:
+        " So, an odd number of backslashes can be expressed with:
         "
-        "       s:even_backslash.'\\\d'
+        "         s:even_backslash.'\\'
+        "
+        " And the regex we need to check whether `match_words` contains a backref is:
+        "
+        "         s:even_backslash.'\\\d'
 
         if match_words =~ s:even_backslash.'\\\d'
             let s:has_BR = 1
