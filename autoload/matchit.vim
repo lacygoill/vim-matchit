@@ -100,14 +100,18 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
 
     elseif a:0 && ( startline < cur_line
     \||             startline == cur_line && startcol < cur_col)
-            " Check whether the match is a single character.  If not, move to the
-            " end of the match.
-            "                                      ┌ mid.'\|'.fin
-            "                                      │ Ex:
-            "                                      │     'elseif\|endif'
-            "                                    ┌─┤
-            let regex   = s:wholematch(cur_line, pat, cur_col-1)
-            let end_col = matchend(cur_line, regex)
+
+            let line = getline('.')
+
+            " Check whether the match is a single character.
+            " If not, move to the end of the match.
+            "
+            "                                  ┌ mid.'\|'.fin
+            "                                  │ Ex:
+            "                                  │     'elseif\|endif'
+            "                                ┌─┤
+            let regex   = s:wholematch(line, pat, cur_col-1)
+            let end_col = matchend(line, regex)
 
             "  This is NOT off by one!
             if end_col > cur_col
