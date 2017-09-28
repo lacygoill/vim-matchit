@@ -43,38 +43,44 @@ fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
     " If <patn> is the first pattern that matches a:string then return <patn>
     " if no optional arguments are given; return <patn>,<altn> if a:1 is given.
 
-    let tail = (a:patterns =~ a:comma."$" ? a:patterns : a:patterns . a:comma)
-    let i = matchend(tail, s:even_backslash.a:comma)
+    let tail = (a:patterns =~ a:comma.'$' ? a:patterns : a:patterns . a:comma)
+    let i    = matchend(tail, s:even_backslash.a:comma)
     if a:0
-        let alttail = (a:1 =~ a:comma."$" ? a:1 : a:1 . a:comma)
+        let alttail = (a:1 =~ a:comma.'$' ? a:1 : a:1 . a:comma)
         let j = matchend(alttail, s:even_backslash.a:comma)
     endif
+
     let current = strpart(tail, 0, i-1)
-    if a:branch == ""
+    if a:branch == ''
         let currpat = current
     else
         let currpat = substitute(current, s:even_backslash.a:branch, '\\|', 'g')
     endif
+
     while a:string !~ a:prefix . currpat . a:suffix
         let tail = strpart(tail, i)
-        let i = matchend(tail, s:even_backslash.a:comma)
+        let i    = matchend(tail, s:even_backslash.a:comma)
         if i == -1
             return -1
         endif
+
         let current = strpart(tail, 0, i-1)
-        if a:branch == ""
+        if a:branch == ''
             let currpat = current
         else
             let currpat = substitute(current, s:even_backslash.a:branch, '\\|', 'g')
         endif
+
         if a:0
             let alttail = strpart(alttail, j)
-            let j = matchend(alttail, s:even_backslash.a:comma)
+            let j       = matchend(alttail, s:even_backslash.a:comma)
         endif
     endwhile
+
     if a:0
-        let current = current . a:comma . strpart(alttail, 0, j-1)
+        let current = current.a:comma.strpart(alttail, 0, j-1)
     endif
+
     return current
 endfu
 
@@ -604,6 +610,7 @@ fu! s:set_pat() abort "{{{2
     "
     "         ┌──────────┬──────────────────────────────────────────────┐
     "         │ s:has_BR │ flag for whether there are backrefs          │
+    "         │          │ in b:match_words                             │
     "         ├──────────┼──────────────────────────────────────────────┤
     "         │ s:pat    │ parsed version of b:match_words              │
     "         ├──────────┼──────────────────────────────────────────────┤
@@ -636,12 +643,32 @@ fu! s:set_pat() abort "{{{2
         let match_words  = match_words.(!empty(match_words) ? ',' : '').def_words
         let s:last_words = match_words
 
-        " \2
-        " \\\2
-        " \\\\\2
+        " There's a backref in `match_words` IFF we can find an odd number of
+        " backslashes in front of a digit.
+        " Watch:
+        "         3  →          3    (not a backref)
+        "       \\3  →      \ + 3    (")
+        "     \\\\3  →  \ + \ + 3    (")
+        "     …
         "
-        " FIXME:
-        " Why is an even number of backslashes forbidden?
+        " Explanation:
+        " For a backref to appear, there needs to be a backslash in front of a digit.
+        " But every pair of backslashes cancel out, because they match a real backslash.
+        " So, inside `match_words`, there needs to be an ODD number of backslashes
+        " in front of a digit.
+        "
+        " To check this pattern is present inside `match_words`, we need a regex.
+        " But in a regex, each real backslash must be doubled.
+        " So, in the regex, there needs to be an EVEN number of backslashes
+        " in front of `\d`.
+        " An even number of backslashes can be expressed with `s:even_backslash`.
+        " But `s:even_backslash` can match 0 backslash, which we don't want.
+        " Why?
+        " Because 0 is not the double of an odd number, it's just the double of 0 (even).
+        " We need a NON-ZERO and even number of backslashes in front of `\d`:
+        "
+        "       s:even_backslash.'\\\d'
+
         if match_words =~ s:even_backslash.'\\\d'
             let s:has_BR = 1
             let s:pat    = s:parse_words(match_words)
