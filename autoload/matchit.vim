@@ -474,12 +474,18 @@ fu! s:parse_words(groups) abort "{{{2
     "       '\(foo\):end\(foo\),\(bar\):end\(bar\)'
 
 
-    " \(foo\):end\1,\(bar\):end\1,(:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>
+    " , and : are special characters.
+    " A sequence of them doesn't have much sense, and thus should be reduced.
+    " There can be 2 kinds of sequences:
+    "
+    "       • only colons     →   should be reduced to a single colon
+    "       • a mix of both   →   should be reduced to a single comma
+    "
+    " Why only these 2 kinds?
+    " A sequence of colons is the most complex equivalent form of a single colon.
+    " A mix of colons and commas is the most complex equivalent form of a single comma.
 
-    " ,,  →  ,
-    " ::  →  :
-    " ,:  →  ,
-    " :,  →  ,
+    let groups = substitute(groups, s:even_backslash.'\zs:\{2,}', ':', 'g')
 
     "                                                                    ┌ a sequence of colons and commas
     "                                                                    │ containing at least one comma
@@ -487,43 +493,63 @@ fu! s:parse_words(groups) abort "{{{2
     let groups = substitute(a:groups.',', s:even_backslash.'\zs[:,]*,[:,]*', ',', 'g')
     "                                                                         │
     "                                          replace it with a single comma ┘
-    "
-    " a sequence of colons doesn't describe any word, so it can be safely removed
-    " a sequence of commas doesn't describe any group of words, so it can also be removed
-    " but why replace it with a comma?
-
-    " \(foo\):end\1,\(bar\):end\1,(:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>,
-
-    let groups = substitute(groups,       s:even_backslash.'\zs:\{2,}',      ':', 'g')
-    " \(foo\):end\1,\(bar\):end\1,(:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>,
-
 
     let parsed = ''
 
-    " groups = 'foo:end\1,bar:end\1'
+    " Interpret `i`, `j`  &friends as weights of substrings up  to the character
+    " they're associated with.
+    "
+    "                       i-1   j-1
+    "                       v     v
+    "     groups =  '\(foo\):end\1,\(bar\):end\1'
+    "                        ^     ^
+    "                        i     j
     while groups =~ '[^:,]'
-        " 4
-        let i = matchend(groups, s:even_backslash.':')
-        " 10
-        let j = matchend(groups, s:even_backslash.',')
-        " foo
-        let ini = strpart(groups, 0, i-1)
-        " end\1:
-        let tail = strpart(groups, i, j-i-1).':'
-        " bar:end\1
-        let groups = strpart(groups, j)
-        " foo
-        let parsed = parsed.ini
-        " 6
-        let i = matchend(tail, s:even_backslash.':')
+        " `match(str, pat)`  / `matchend(str,  pat)` returns  the weight  of the
+        " substring up to the the 1st match of `pat`, EXCLUDING / INCLUDING it
+        "
+        " We use `matchend()` instead of `match()` because of `s:even_backslash`.
+        " We could also probably use `match()` if we suffixed `:` with `\zs`:
+        "
+        "         let i = match(groups, s:even_backslash.':\zs')
 
+        let i = matchend(groups, s:even_backslash.':')
+        let j = matchend(groups, s:even_backslash.',')
+
+        " ┌────────┬───────────────┐
+        " │ ini    │ \(foo\)       │
+        " ├────────┼───────────────┤
+        " │ tail   │ end\1:        │
+        " ├────────┼───────────────┤
+        " │ groups │ \(bar\):end\1 │
+        " └────────┴───────────────┘
+        "
+        " ini + tail = 1 group
+        " groups     = subsequent groups
+
+        let ini = strpart(groups, 0, i-1)
+        "                            └─┤
+        "                              └ this is NOT a byte index,
+        "                                this is a length/weight (of the desired substring)
+        let tail   = strpart(groups, i, j-1-i).':'
+        let groups = strpart(groups, j)
+
+        let parsed = parsed.ini
+        let i      = matchend(tail, s:even_backslash.':')
+
+        " until `tail` hasn't been used up
         while i != -1
-            " In 'if:else:endif', ini='if' and word='else' and then word='endif'.
+            " In 'if:else:endif':
+            "
+            "         • ini  = 'if'
+            "         • word = 'else'  (1st iteration)
+            "         • word = 'endif' (2nd iteration)
+
             let word   = strpart(tail, 0, i-1)
             let tail   = strpart(tail, i)
             let i      = matchend(tail, s:even_backslash.':')
             let parsed = parsed.':'.s:resolve(ini, word, 'word')
-        endwhile " Now, tail has been used up.
+        endwhile
 
         let parsed = parsed.','
     endwhile
@@ -783,9 +809,9 @@ endfu
 
 " Variables {{{1
 
-let s:last_mps = ''
+let s:last_mps   = ''
 let s:last_words = ':'
-let s:patBR = ''
+let s:patBR      = ''
 
 " An even number of consecutive backslashes.
 "
