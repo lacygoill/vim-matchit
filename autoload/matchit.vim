@@ -13,6 +13,12 @@ let g:autoloaded_matchit = 1
 "     \%(}\@<=}}\@=\)\@!\&\%(}}\)\@<!}\%(}}\)\@!
 
 " TODO:
+"
+" “How can i highlight matching names defined by matchit?“:
+"
+"         https://vi.stackexchange.com/q/8707/13370
+
+" TODO:
 " We should store the words in a list not in a string.
 " This would allow us to get rid of things like `!empty(…) ? ',' : ''`
 
@@ -620,9 +626,9 @@ fu! s:resolve(source, target, output) abort "{{{2
     "         word  = '\(c\)\(b\)\(a\)\3\2'
     "         table = '-32-------'
     "
-    " That is, the first '\1' in target is replaced by '\(a\)' in word, table[1]
-    " = 3, and this indicates that all  other instances of '\1' in target are to
-    " be replaced by '\3'.
+    " That  is, the  first '\1'  in  target is  replaced by  '\(a\)' from  word,
+    " table[1]  = 3,  and this  indicates that  all other  instances of  '\1' in
+    " target are to be replaced by '\3'.
     "
     " The hard part is dealing with nesting …
     "
@@ -638,20 +644,27 @@ fu! s:resolve(source, target, output) abort "{{{2
         let d = word[i]
         let backref = s:ref(a:source, d)
 
-        " The idea is to replace '\d' with backref.
+        " The idea is to replace `\d` with backref.
         "
         " Before we do this, replace any \(\) groups in backref with :1, :2, …
         " if they  correspond to the  first, second, … group  already inserted
         " into backref. Later, replace :1 with \1 and so on.
         "
-        " The group number w+b within backref  corresponds to the group number s
-        " within a:source.
-        "
-        " w = number of '\(' in word before the current one
+        " The group number `w+b` within  backref corresponds to the group number
+        " `s` within a:source.
+
+        " ┌───┬───────────────────────────────────────────────┐
+        " │ w │ number of '\(' in word before the current one │
+        " ├───┼───────────────────────────────────────────────┤
+        " │ b │ number of the current '\(' in backref         │
+        " ├───┼───────────────────────────────────────────────┤
+        " │ s │ number of the current '\(' in a:source        │
+        " └───┴───────────────────────────────────────────────┘
 
         let w = s:count(substitute(strpart(word, 0, i-1), '\\\\', '', 'g'), '\(', '1')
-        let b = 1 " number of the current '\(' in backref
-        let s = d " number of the current '\(' in a:source
+        let b = 1
+        let s = d
+
         while b <= s:count(substitute(backref, '\\\\', '', 'g'), '\(', '1')
         \&&   s < 10
             if table[s] == '-'
