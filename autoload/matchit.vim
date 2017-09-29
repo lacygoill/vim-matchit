@@ -537,7 +537,7 @@ fu! s:parse_words(groups) abort "{{{2
         let parsed = parsed.ini
         let i      = matchend(tail, s:even_backslash.':')
 
-        " until `tail` hasn't been used up
+        " until `tail` has been completely parsed
         while i != -1
             " In 'if:else:endif':
             "
@@ -545,10 +545,10 @@ fu! s:parse_words(groups) abort "{{{2
             "         • word = 'else'  (1st iteration)
             "         • word = 'endif' (2nd iteration)
 
-            let word   = strpart(tail, 0, i-1)
-            let tail   = strpart(tail, i)
-            let i      = matchend(tail, s:even_backslash.':')
-            let parsed = parsed.':'.s:resolve(ini, word, 'word')
+            let word    = strpart(tail, 0, i-1)
+            let tail    = strpart(tail, i)
+            let i       = matchend(tail, s:even_backslash.':')
+            let parsed .= ':'.s:resolve(ini, word, 'word')
         endwhile
 
         let parsed = parsed.','
@@ -575,7 +575,7 @@ fu! s:ref(string, d, ...) abort "{{{2
     if a:d == 0
         let start = 0
     else
-        let cnt = a:d
+        let cnt   = a:d
         let match = a:string
         while cnt
             let cnt -= 1
@@ -603,13 +603,12 @@ fu! s:ref(string, d, ...) abort "{{{2
         let start -= 2
         let len -= start + strlen(match)
     endif
-    if a:0 == 1
-        return len
-    elseif a:0 == 2
-        return 'let '.a:1.'='.start.'| let '.a:2.'='.len
-    else
-        return strpart(a:string, start, len)
-    endif
+
+    return a:0 == 1
+    \?         len
+    \:     a:0 == 2
+    \?         'let '.a:1.'='.start.'| let '.a:2.'='.len
+    \:         strpart(a:string, start, len)
 endfu
 
 fu! s:resolve(source, target, output) abort "{{{2
@@ -638,15 +637,19 @@ fu! s:resolve(source, target, output) abort "{{{2
     while i != -2
         let d = word[i]
         let backref = s:ref(a:source, d)
-        " The idea is to replace '\d' with backref.  Before we do this,
-        " replace any \(\) groups in backref with :1, :2, ... if they
-        " correspond to the first, second, ... group already inserted
-        " into backref.  Later, replace :1 with \1 and so on.  The group
-        " number w+b within backref corresponds to the group number
-        " s within a:source.
+
+        " The idea is to replace '\d' with backref.
+        "
+        " Before we do this, replace any \(\) groups in backref with :1, :2, …
+        " if they  correspond to the  first, second, … group  already inserted
+        " into backref. Later, replace :1 with \1 and so on.
+        "
+        " The group number w+b within backref  corresponds to the group number s
+        " within a:source.
+        "
         " w = number of '\(' in word before the current one
-        let w = s:count(
-                    \ substitute(strpart(word, 0, i-1), '\\\\', '', 'g'), '\(', '1')
+
+        let w = s:count(substitute(strpart(word, 0, i-1), '\\\\', '', 'g'), '\(', '1')
         let b = 1 " number of the current '\(' in backref
         let s = d " number of the current '\(' in a:source
         while b <= s:count(substitute(backref, '\\\\', '', 'g'), '\(', '1')
@@ -656,8 +659,8 @@ fu! s:resolve(source, target, output) abort "{{{2
                     " let table[s] = w + b
                     let table = strpart(table, 0, s).(w+b).strpart(table, s+1)
                 endif
-                let b += b
-                let s += s
+                let b += 1
+                let s += 1
             else
                 exe s:ref(backref, b, 'start', 'len')
                 let ref = strpart(backref, start, len)
@@ -669,14 +672,14 @@ fu! s:resolve(source, target, output) abort "{{{2
         let word = strpart(word, 0, i-1).backref.strpart(word, i+1)
         let i    = matchend(word, s:even_backslash.'\\\d') - 1
     endwhile
+
     let word = substitute(word, s:even_backslash.'\zs:', '\\', 'g')
-    if a:output == 'table'
-        return table
-    elseif a:output == 'word'
-        return word
-    else
-        return table.word
-    endif
+
+    return a:output == 'table'
+    \?         table
+    \:     a:output == 'word'
+    \?         word
+    \:     table.word
 endfu
 
 fu! s:set_ic() abort "{{{2
