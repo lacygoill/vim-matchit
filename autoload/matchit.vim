@@ -26,14 +26,15 @@ let g:autoloaded_matchit = 1
 " This would require an option:  how many lines to scan (default 1).
 " This would be useful for Python, maybe also for *ML.
 "
-" TODO:  Eliminate the `multi()` function.
-" Add yet another argument to `wrapper()` instead.
-"
 " TODO:  Allow:
 "
 "         let b:match_words = '\v((foo)(bar)):\3\2:end\1'
 "
 " TODO:  Make backrefs safer by using '\V' (very no-magic).
+"
+" TODO:
+" make `multi()` pass the  middle part of a group of  words to `searchpair()` as
+" its 2nd argument.
 
 " Functions {{{1
 fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
@@ -162,13 +163,16 @@ fu! s:get_info() abort "{{{2
 endfu
 
 fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
-    " Example (simplified HTML patterns):  if
-    "   a:groupBR   = '<\(\k\+\)>:</\1>'
-    "   a:prefix    = '^.\{3}\('
-    "   a:group     = '<\(\k\+\)>:</\(\k\+\)>'
-    "   a:suffix    = '\).\{2}$'
-    "   a:line =  "123<tag>12" or "123</tag>12"
-    " then extract "tag" from a:line and return "<tag>:</tag>" .
+    " Example (simplified HTML patterns).
+    "
+    " If:
+    "       a:groupBR   = '<\(\k\+\)>:</\1>'
+    "       a:prefix    = '^.\{3}\('
+    "       a:group     = '<\(\k\+\)>:</\(\k\+\)>'
+    "       a:suffix    = '\).\{2}$'
+    "       a:line      =  "123<tag>12" or "123</tag>12"
+    "
+    " … then extract "tag" from a:line and return "<tag>:</tag>".
 
     if a:line !~ a:prefix
               \. substitute(a:group, s:even_backslash.'\zs:', '\\|', 'g')
@@ -254,8 +258,12 @@ fu! matchit#next_word(fwd, mode) abort "{{{2
     endif
     let end_col = matchend(line, regex)
     let suf     = strlen(line) - end_col
-    let prefix  = (cur_col ? '^.*\%'.(cur_col + 1).'c\%(' : '^\%(')
-    let suffix  = (suf ? '\)\%'.(end_col + 1).'c.*$' : '\)$')
+    let prefix  = cur_col
+               \?     '^.*\%'.(cur_col + 1).'c\%('
+               \:     '^\%('
+    let suffix  = suf
+               \?     '\)\%'.(end_col + 1).'c.*$'
+               \:     '\)$'
 
     " Third step:  Find the group and single word that match, and the original
     " (backref) versions of these.  Then, resolve the backrefs.
@@ -466,8 +474,6 @@ fu! s:parse_words(groups) abort "{{{2
     "       '\(foo\):end\(foo\),\(bar\):end\(bar\)'
 
 
-
-
     " \(foo\):end\1,\(bar\):end\1,(:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>
 
     " ,,  →  ,
@@ -475,10 +481,10 @@ fu! s:parse_words(groups) abort "{{{2
     " ,:  →  ,
     " :,  →  ,
 
-    "                                                                    ┌ a sequence of commas and colons
+    "                                                                    ┌ a sequence of colons and commas
     "                                                                    │ containing at least one comma
     "                                                          ┌─────────┤
-    let groups = substitute(a:groups.',', s:even_backslash.'\zs[,:]*,[,:]*', ',', 'g')
+    let groups = substitute(a:groups.',', s:even_backslash.'\zs[:,]*,[:,]*', ',', 'g')
     "                                                                         │
     "                                          replace it with a single comma ┘
     "
@@ -492,18 +498,24 @@ fu! s:parse_words(groups) abort "{{{2
     " \(foo\):end\1,\(bar\):end\1,(:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>,
 
 
-
-
     let parsed = ''
 
-    while groups =~ '[^,:]'
-        let i      = matchend(groups, s:even_backslash.':')
-        let j      = matchend(groups, s:even_backslash.',')
-        let ini    = strpart(groups, 0, i-1)
-        let tail   = strpart(groups, i, j-i-1).':'
+    " groups = 'foo:end\1,bar:end\1'
+    while groups =~ '[^:,]'
+        " 4
+        let i = matchend(groups, s:even_backslash.':')
+        " 10
+        let j = matchend(groups, s:even_backslash.',')
+        " foo
+        let ini = strpart(groups, 0, i-1)
+        " end\1:
+        let tail = strpart(groups, i, j-i-1).':'
+        " bar:end\1
         let groups = strpart(groups, j)
+        " foo
         let parsed = parsed.ini
-        let i      = matchend(tail, s:even_backslash.':')
+        " 6
+        let i = matchend(tail, s:even_backslash.':')
 
         while i != -1
             " In 'if:else:endif', ini='if' and word='else' and then word='endif'.
@@ -520,15 +532,18 @@ fu! s:parse_words(groups) abort "{{{2
 endfu
 
 fu! s:ref(string, d, ...) abort "{{{2
-    " No extra arguments:  s:ref(string, d) will
-    " find the d'th occurrence of '\(' and return it, along with everything up
-    " to and including the matching '\)'.
-    " One argument:  s:ref(string, d, "start") returns the index of the start
-    " of the d'th '\(' and any other argument returns the length of the group.
-    " Two arguments:  s:ref(string, d, "foo", "bar") returns a string to be
-    " executed, having the effect of
-    "   :let foo = s:ref(string, d, "start")
-    "   :let bar = s:ref(string, d, "len")
+    " No extra arguments: s:ref(string, d) will find the d'th occurrence of '\('
+    " and return  it, along  with everything  up to  and including  the matching
+    " '\)'.
+    "
+    " One argument: s:ref(string, d, "start") returns  the index of the start of
+    " the d'th '\(' and any other argument returns the length of the group.
+    "
+    " Two  arguments: s:ref(string,  d, "foo",  "bar")  returns a  string to  be
+    " executed, having the effect of:
+    "
+    "       let foo = s:ref(string, d, "start")
+    "       let bar = s:ref(string, d, "len")
 
     let len = strlen(a:string)
     if a:d == 0
@@ -537,7 +552,7 @@ fu! s:ref(string, d, ...) abort "{{{2
         let cnt = a:d
         let match = a:string
         while cnt
-            let cnt = cnt - 1
+            let cnt -= 1
             let index = matchend(match, s:even_backslash.'\\(')
             if index == -1
                 return ''
@@ -555,12 +570,12 @@ fu! s:ref(string, d, ...) abort "{{{2
                 return ''
             endif
             " Increment if an open, decrement if a ')':
-            let cnt = cnt + ( match[index] == '(' ? 1 : -1 )  " ')'
+            let cnt += match[index] == '(' ? 1 : -1   " ')'
             " let cnt = stridx('0(', match[index]) + cnt
             let match = strpart(match, index+1)
         endwhile
-        let start = start - 2
-        let len = len - start - strlen(match)
+        let start -= 2
+        let len -= start + strlen(match)
     endif
     if a:0 == 1
         return len
@@ -572,19 +587,29 @@ fu! s:ref(string, d, ...) abort "{{{2
 endfu
 
 fu! s:resolve(source, target, output) abort "{{{2
-    " s:resolve('\(a\)\(b\)', '\(c\)\2\1\1\2') should return table.word, where
-    " word = '\(c\)\(b\)\(a\)\3\2' and table = '-32-------'.  That is, the first
-    " '\1' in target is replaced by '\(a\)' in word, table[1] = 3, and this
-    " indicates that all other instances of '\1' in target are to be replaced
-    " by '\3'.  The hard part is dealing with nesting...
-    " Note that ":" is an illegal character for source and target,
-    " unless it is preceded by "\".
+
+    "         s:resolve('\(a\)\(b\)', '\(c\)\2\1\1\2')
+    "
+    " … should return table.word, where:
+    "
+    "         word  = '\(c\)\(b\)\(a\)\3\2'
+    "         table = '-32-------'
+    "
+    " That is, the first '\1' in target is replaced by '\(a\)' in word, table[1]
+    " = 3, and this indicates that all  other instances of '\1' in target are to
+    " be replaced by '\3'.
+    "
+    " The hard part is dealing with nesting …
+    "
+    " Note that ":" is an illegal character  for source and target, unless it is
+    " preceded by "\".
 
     let word  = a:target
     let i     = matchend(word, s:even_backslash.'\\\d') - 1
     let table = '----------'
 
-    while i != -2 " There are back references to be replaced.
+    " As long as there are back references to be replaced.
+    while i != -2
         let d = word[i]
         let backref = s:ref(a:source, d)
         " The idea is to replace '\d' with backref.  Before we do this,
@@ -599,7 +624,7 @@ fu! s:resolve(source, target, output) abort "{{{2
         let b = 1 " number of the current '\(' in backref
         let s = d " number of the current '\(' in a:source
         while b <= s:count(substitute(backref, '\\\\', '', 'g'), '\(', '1')
-                    \ && s < 10
+        \&&   s < 10
             if table[s] == '-'
                 if w + b < 10
                     " let table[s] = w + b
