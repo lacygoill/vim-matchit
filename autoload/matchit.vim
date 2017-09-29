@@ -461,12 +461,39 @@ fu! s:parse_words(groups) abort "{{{2
     "
     "       '\(foo\):end\1,\(bar\):end\1'
     "
-    " Output: a comma-separated list of groups with backrefs replaced:
+    " Output: same thing but with backrefs replaced:
     "
     "       '\(foo\):end\(foo\),\(bar\):end\(bar\)'
 
+
+
+
+    " \(foo\):end\1,\(bar\):end\1,(:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>
+
+    " ,,  →  ,
+    " ::  →  :
+    " ,:  →  ,
+    " :,  →  ,
+
+    "                                                                    ┌ a sequence of commas and colons
+    "                                                                    │ containing at least one comma
+    "                                                          ┌─────────┤
     let groups = substitute(a:groups.',', s:even_backslash.'\zs[,:]*,[,:]*', ',', 'g')
-    let groups = substitute(groups, s:even_backslash.'\zs:\{2,}', ':', 'g')
+    "                                                                         │
+    "                                          replace it with a single comma ┘
+    "
+    " a sequence of colons doesn't describe any word, so it can be safely removed
+    " a sequence of commas doesn't describe any group of words, so it can also be removed
+    " but why replace it with a comma?
+
+    " \(foo\):end\1,\(bar\):end\1,(:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>,
+
+    let groups = substitute(groups,       s:even_backslash.'\zs:\{2,}',      ':', 'g')
+    " \(foo\):end\1,\(bar\):end\1,(:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>,
+
+
+
+
     let parsed = ''
 
     while groups =~ '[^,:]'
@@ -487,10 +514,9 @@ fu! s:parse_words(groups) abort "{{{2
         endwhile " Now, tail has been used up.
 
         let parsed = parsed.','
-    endwhile " groups =~ '[^,:]'
+    endwhile
 
-    let parsed = substitute(parsed, ',$', '', '')
-    return parsed
+    return substitute(parsed, ',$', '', '')
 endfu
 
 fu! s:ref(string, d, ...) abort "{{{2
@@ -736,8 +762,34 @@ let s:last_mps = ''
 let s:last_words = ':'
 let s:patBR = ''
 
-" an even number of consecutive backslashes
-
+" An even number of consecutive backslashes.
+"
+" How is this variable useful?{{{
+" By design, the  plugin treats a colon and a  comma, inside `b:match_words`, as
+" special characters.  They are delimiters between 2 consecutive words or groups
+" of words:
+"
+"         :    →    delimiter between 2 words
+"         ,    →    delimiter between 2 groups
+"
+" But how to include a literal colon or comma inside a word?
+" By design, the plugin should consider a backslashed colon or comma as literal.
+"
+"         \:    →    literal colon
+"         \,    →    literal comma
+"
+" But what about a colon or comma preceded by literal backslashes?
+"
+"         \\\:     →    literal backslash         +  literal colon
+"         \\\,     →    literal backslash         +  literal comma
+"         \\\\:    →    literal double backslash  +  delimiter between 2 words
+"         \\\\,    →    literal double backslash  +  delimiter between 2 groups
+"
+" When a  colon/comma is  preceded by an  even number of  backslashes, it  has a
+" special meaning. Otherwise, it's literal.
+" That's  why `s:even_backslash`  is useful:  to make  the difference  between a
+" literal and special colon/comma.
+"}}}
 "                            ┌ no slash before an even number of slashes
 "                       ┌────┤
 let s:even_backslash = '\\\@<!\%(\\\\\)*'
