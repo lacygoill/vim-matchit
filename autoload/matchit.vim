@@ -282,7 +282,7 @@ fu! matchit#next_word(fwd, mode) abort "{{{2
     " 'while:endwhile' or whatever.  A bit of a kluge:  s:choose() returns
     " group . "," . groupBR, and we pick it apart.
 
-    let group   = s:choose(s:pat, line, ',', ':', prefix, suffix, s:patBR)
+    let group   = s:choose(s:pat, line, ',', ':', prefix, suffix, s:pat_unresolved)
     let i       = matchend(group, s:even_backslash.',')
     let groupBR = strpart(group, i)
     let group   = strpart(group, 0, i-1)
@@ -729,9 +729,9 @@ fu! s:set_pat() abort "{{{2
         " ┌───────────┤ ┌───────┤ ┌────────────────────────────────────────────────┤
         " (:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>
 
-        let def_words = escape(&l:mps, '[^$.*~\/?]')
+        let def_words = escape(&l:mps, '[$^.*~\/?]')
                      \. (!empty(&l:mps) ? ',' : '')
-                     \. '\/\*:\*\/,#\s*if\%(def\)\=:#\s*else\>:#\s*elif\>:#\s*endif\>'
+                     \. '\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>'
 
         " We store the last used value of `b:match_words` and `&l:mps` in
         " script-local variables. Update them.
@@ -743,24 +743,24 @@ fu! s:set_pat() abort "{{{2
         " There's a backref in `match_words` IFF we can find an odd number of{{{
         " backslashes in front of a digit.
         " Watch:
-        "         3  →          3    (not a backref)
+        "         3  →          3    (NOT a backref)
         "       \\3  →      \ + 3    (")
         "     \\\\3  →  \ + \ + 3    (")
         "     …
         "
         " Explanation:
         " For a backref to appear, there needs to be a backslash in front of a digit.
-        " But every pair of backslashes cancel out, because they match a real backslash.
+        " But every pair of backslashes cancels out, because they match a real backslash.
         " So, inside `match_words`, there needs to be an ODD number of backslashes
         " in front of a digit.
         "
         " To check this pattern is present inside `match_words`, we need a regex.
-        " An even number of backslashes can be expressed with `s:even_backslash`.
-        " So, an odd number of backslashes can be expressed with:
+        " An EVEN number of backslashes can be expressed with `s:even_backslash`.
+        " So, an ODD number of backslashes can be expressed with:
         "
         "         s:even_backslash.'\\'
         "
-        " And the regex we need to check whether `match_words` contains a backref is:
+        " And to check whether `match_words` contains a backref, we need this regex:
         "
         "         s:even_backslash.'\\\d'
 "}}}
@@ -773,16 +773,10 @@ fu! s:set_pat() abort "{{{2
         endif
         let s:all_words = '\%('.substitute(s:pat, s:even_backslash.'\zs[,:]\+', '\\|', 'g').'\)'
 
-        " FIXME:
-        " The next lines were not present in `s:MultiMatch()`.
-        " Now that we have extracted some code inside `s:set_pat()`,
-        " and call the latter in `MultiMatch()`, does it cause an issue
-        " if we reset `s:patBR`?
-
-        " Reconstruct the version with unresolved backrefs.
-        let s:patBR = substitute(match_words.',',
-                    \ s:even_backslash.'\zs[,:]*,[,:]*', ',', 'g')
-        let s:patBR = substitute(s:patBR, s:even_backslash.'\zs:\{2,}', ':', 'g')
+        " Reconstruct the pattern with unresolved backrefs.
+        let s:pat_unresolved = substitute(match_words.',',
+                             \ s:even_backslash.'\zs[,:]*,[,:]*', ',', 'g')
+        let s:pat_unresolved = substitute(s:pat_unresolved, s:even_backslash.'\zs:\{2,}', ':', 'g')
     endif
 endfu
 
@@ -825,9 +819,9 @@ endfu
 
 " Variables {{{1
 
-let s:last_mps   = ''
-let s:last_words = ':'
-let s:patBR      = ''
+let s:last_mps       = ''
+let s:last_words     = ':'
+let s:pat_unresolved = ''
 
 " An even number of consecutive backslashes.
 "
