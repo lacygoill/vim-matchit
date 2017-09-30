@@ -3,6 +3,32 @@ if exists('g:autoloaded_matchit')
 endif
 let g:autoloaded_matchit = 1
 
+" FIXMES / TODOS {{{1
+
+" FIXME:
+"         let b:match_words .= ',\(foo\):end\1,\(bar\):end\1'
+"         foo
+"             bar
+"                 hello
+"                 world
+"             endbar
+"         endfoo
+"
+" Source the assignment.
+" Position the cursor on `bar`    and hit `]%` → `endbar`    ✔
+" Position the cursor on `endbar` and hit `]%` → ø           ✘ (should move onto `endfoo`)
+"                         ^^^
+" Actually, the problem only occurs when the cursor is on `end`, not `bar`.
+"
+" Also, source this:
+"
+"         let b:match_words = 'foo:endfoo,bar:endbar'
+"
+" … then hit `]%` on `foo`: the cursor doesn't move. It should go onto `endfoo`.
+" The issue seems related to `searchpair()`. Type this while on `foo`:
+"
+"       echo searchpair('foo\|bar', '', 'endfoo\|endbar')
+
 " FIXME:
 " `[%` (&friends) should ignore triple curly braces
 " They don't, probably because of 'mps' which contains `{:}`.
@@ -17,6 +43,8 @@ let g:autoloaded_matchit = 1
 " “How can i highlight matching names defined by matchit?“:
 "
 "         https://vi.stackexchange.com/q/8707/13370
+"
+" Implement a mapping, lhs = z%
 
 " TODO:
 " We should store the words in a list not in a string.
@@ -41,6 +69,7 @@ let g:autoloaded_matchit = 1
 " TODO:
 " make `multi()` pass the  middle part of a group of  words to `searchpair()` as
 " its 2nd argument.
+
 
 " Functions {{{1
 fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
@@ -430,6 +459,23 @@ fu! matchit#next_unmatched(fwd, mode) abort "{{{2
 
     mark '
     while level
+        " start
+        " '\%(foo\)\|\%(bar\)\|\%((\)\|\%({\)\|\%(\[\)\|\%(\/\*\)\|\%(#\s*if\%(def\)\?\)'
+
+        " end
+        " '\%(endfoo\)\|\%(endbar\)\|\%()\)\|\%(}\)\|\%(\]\)\|\%(\*\/\)\|\%(#\s*else\>\|#\s*elif\>\|#\s*endif\>\)'
+
+        " fwd
+        " 1
+
+        " skip
+        " '0'
+
+        " let g:start = '\%(foo\)\|\%(bar\)\|\%((\)\|\%({\)\|\%(\[\)\|\%(\/\*\)\|\%(#\s*if\%(def\)\?\)'
+        " let g:end = '\%(endfoo\)\|\%(endbar\)\|\%()\)\|\%(}\)\|\%(\]\)\|\%(\*\/\)\|\%(#\s*else\>\|#\s*elif\>\|#\s*endif\>\)'
+        " let g:fwd = 1
+        " let g:skip = '0'
+
         if searchpair(start, '', end, (a:fwd ? 'W' : 'bW'), skip) < 1
             call s:clean_up(old_ic, a:mode)
             return
@@ -490,12 +536,12 @@ fu! s:parse_words(groups) abort "{{{2
     " Why only these 2 kinds? What about “only commas“?
     " Already covered by “commas mixed with possible colons“. Pay attention to “possible“.
 
-    let groups = substitute(groups, s:even_backslash.'\zs:\{2,}', ':', 'g')
+    let groups = substitute(a:groups, s:even_backslash.'\zs:\{2,}', ':', 'g')
 
-    "                                                                    ┌ a sequence of colons and commas
-    "                                                                    │ containing at least one comma
-    "                                                          ┌─────────┤
-    let groups = substitute(a:groups.',', s:even_backslash.'\zs[:,]*,[:,]*', ',', 'g')
+    "                                                                  ┌ a sequence of colons and commas
+    "                                                                  │ containing at least one comma
+    "                                                        ┌─────────┤
+    let groups = substitute(groups.',', s:even_backslash.'\zs[:,]*,[:,]*', ',', 'g')
     "                                                                         │
     "                                          replace it with a single comma ┘
 
@@ -568,13 +614,22 @@ fu! s:parse_words(groups) abort "{{{2
         while i != -1
             " In 'if:else:endif' :
             "
-            "         • head = 'if'       assigned in the outer loop
+            "         • head = 'if'       assigned in                      the outer loop
             "         • word = 'else'     assigned in the 1st iteration of the inner loop
             "         • word = 'endif'    assigned in the 2nd iteration of the inner loop
-            let word    = strpart(tail, 0, i-1)
-            let tail    = strpart(tail, i)
+
+            " next word in the group
+            " (group currently processed in the main while loop)
+            let word = strpart(tail, 0, i-1)
+
+            " all the remaining words of this group
+            let tail = strpart(tail, i)
+
+            " resolve the possible backrefs in the word
             let parsed .= ':'.s:resolve(head, word, 'word')
-            let i       = matchend(tail, s:even_backslash.':')
+
+            " move on to the next word
+            let i = matchend(tail, s:even_backslash.':')
         endwhile
 
         " add a comma before parsing and adding another group
@@ -639,8 +694,11 @@ fu! s:ref(string, d, ...) abort "{{{2
     \:         strpart(a:string, start, len)
 endfu
 
-fu! s:resolve(source, target, output) abort "{{{2
+fu! s:resolve(head, word, output) abort "{{{2
 
+    "                             ┌───────────────── head of group
+    "                             │                ┌ a word of the same group
+    "                    ┌────────┤    ┌───────────┤
     "         s:resolve('\(a\)\(b\)', '\(c\)\2\1\1\2')
     "
     " … should return table.word, where:
@@ -648,23 +706,23 @@ fu! s:resolve(source, target, output) abort "{{{2
     "         word  = '\(c\)\(b\)\(a\)\3\2'
     "         table = '-32-------'
     "
-    " That  is, the  first '\1'  in  target is  replaced by  '\(a\)' from  word,
+    " That  is, the  first '\1'  in  word is  replaced by  '\(a\)' from  word,
     " table[1]  = 3,  and this  indicates that  all other  instances of  '\1' in
-    " target are to be replaced by '\3'.
+    " word are to be replaced by '\3'.
     "
     " The hard part is dealing with nesting …
     "
-    " Note that ":" is an illegal character  for source and target, unless it is
+    " Note that ":" is an illegal character  for head and word, unless it is
     " preceded by "\".
 
-    let word  = a:target
+    let word  = a:word
     let i     = matchend(word, s:even_backslash.'\\\d') - 1
     let table = '----------'
 
     " As long as there are back references to be replaced.
     while i != -2
         let d = word[i]
-        let backref = s:ref(a:source, d)
+        let backref = s:ref(a:head, d)
 
         " The idea is to replace `\d` with backref.
         "
@@ -673,14 +731,14 @@ fu! s:resolve(source, target, output) abort "{{{2
         " into backref. Later, replace :1 with \1 and so on.
         "
         " The group number `w+b` within  backref corresponds to the group number
-        " `s` within a:source.
+        " `s` within a:head.
 
         " ┌───┬───────────────────────────────────────────────┐
         " │ w │ number of '\(' in word before the current one │
         " ├───┼───────────────────────────────────────────────┤
         " │ b │ number of the current '\(' in backref         │
         " ├───┼───────────────────────────────────────────────┤
-        " │ s │ number of the current '\(' in a:source        │
+        " │ s │ number of the current '\(' in a:head          │
         " └───┴───────────────────────────────────────────────┘
 
         let w = s:count(substitute(strpart(word, 0, i-1), '\\\\', '', 'g'), '\(', '1')
