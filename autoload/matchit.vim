@@ -187,7 +187,7 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     endif
 
     let i      = matchend(a:groupBR, s:even_backslash.':')
-    let ini    = strpart(a:groupBR, 0, i-1)
+    let head   = strpart(a:groupBR, 0, i-1)
     let tailBR = strpart(a:groupBR, i)
     let word   = s:choose(a:group, a:line, ':', '', a:prefix, a:suffix, a:groupBR)
     let i      = matchend(word, s:even_backslash.':')
@@ -195,8 +195,8 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     let word   = strpart(word, 0, i-1)
 
     " Now, a:line =~ a:prefix . word . a:suffix
-    if wordBR != ini
-        let table = s:resolve(ini, wordBR, 'table')
+    if wordBR != head
+        let table = s:resolve(head, wordBR, 'table')
     else
         let table = ''
         let d     = 0
@@ -215,13 +215,13 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
             let backref = substitute(a:line, a:prefix.word.a:suffix, '\'.table[d], '')
             " Are there any other characters that should be escaped?
             let backref = escape(backref, '*,:')
-            exe s:ref(ini, d, 'start', 'len')
-            let ini     = strpart(ini, 0, start) . backref . strpart(ini, start+len)
+            exe s:ref(head, d, 'start', 'len')
+            let head    = strpart(head, 0, start) . backref . strpart(head, start+len)
             let tailBR  = substitute(tailBR, s:even_backslash.'\zs\\'.d, escape(backref, '\\&'), 'g')
         endif
         let d -= 1
     endwhile
-    return ini.':'.tailBR
+    return head.':'.tailBR
 endfu
 
 fu! matchit#next_word(fwd, mode) abort "{{{2
@@ -484,12 +484,11 @@ fu! s:parse_words(groups) abort "{{{2
     " A sequence of them doesn't have much sense, and thus should be reduced.
     " There can be 2 kinds of sequences:
     "
-    "       • only colons     →   should be reduced to a single colon
-    "       • a mix of both   →   should be reduced to a single comma
+    "       • only colons                          →   should be reduced to a single colon
+    "       • commas mixed with possible colons    →   should be reduced to a single comma
     "
-    " Why only these 2 kinds?
-    " A sequence of colons is the most complex equivalent form of a single colon.
-    " A mix of colons and commas is the most complex equivalent form of a single comma.
+    " Why only these 2 kinds? What about “only commas“?
+    " Already covered by “commas mixed with possible colons“. Pay attention to “possible“.
 
     let groups = substitute(groups, s:even_backslash.'\zs:\{2,}', ':', 'g')
 
@@ -500,66 +499,89 @@ fu! s:parse_words(groups) abort "{{{2
     "                                                                         │
     "                                          replace it with a single comma ┘
 
+    " We'll return this variable at the end of the function.
+    " It should store the groups with all backrefs resolved.
     let parsed = ''
-
-    " Interpret `i`, `j`  &friends as weights of substrings up  to the character
-    " they're associated with.
+    " The rest of the code is an imbrication of while loops.
+    " The purpose of the:
     "
-    "                       i-1   j-1
-    "                       v     v
-    "     groups =  '\(foo\):end\1,\(bar\):end\1'
-    "                        ^     ^
-    "                        i     j
+    "         • outer loop is to process groups
+    "         • inner loop is to process words in a group
+
+    "                     ┌ go on until there's only colons and/or commas in `groups`
+    "     ┌───────────────┤
     while groups =~ '[^:,]'
+        " What's `i`(-1) and `j`(-1)? {{{
+        "
+        " Weights of the substrings from the beginning of `groups` up to a colon / comma.
+        " When the `-1` offset is added, the colon / comma is excluded from the substring.
+        "
+        "                      i-1   j-1
+        "                      v     v
+        "     groups = '\(foo\):end\1,\(bar\):end\1'
+        "                       ^     ^
+        "                       i     j
+"}}}
+        " Why `matchend()`?{{{
+        "
         " `match(str, pat)`  / `matchend(str,  pat)` returns  the weight  of the
-        " substring up to the the 1st match of `pat`, EXCLUDING / INCLUDING it
+        " substring up to the the 1st match of `pat`, EXCLUDING / INCLUDING it.
         "
         " We use `matchend()` instead of `match()` because of `s:even_backslash`.
         " We could also probably use `match()` if we suffixed `:` with `\zs`:
         "
         "         let i = match(groups, s:even_backslash.':\zs')
-
+"}}}
         let i = matchend(groups, s:even_backslash.':')
         let j = matchend(groups, s:even_backslash.',')
 
         " ┌────────┬───────────────┐
-        " │ ini    │ \(foo\)       │
+        " │ head   │ \(foo\)       │
         " ├────────┼───────────────┤
         " │ tail   │ end\1:        │
         " ├────────┼───────────────┤
         " │ groups │ \(bar\):end\1 │
         " └────────┴───────────────┘
         "
-        " ini + tail = 1 group
-        " groups     = subsequent groups
+        " head + tail = 1st group
+        " groups      = subsequent groups
 
-        let ini = strpart(groups, 0, i-1)
-        "                            └─┤
-        "                              └ this is NOT a byte index,
-        "                                this is a length/weight (of the desired substring)
-        let tail   = strpart(groups, i, j-1-i).':'
+        "                               ┌ this is NOT a byte index,
+        "                               │ this is the weight of the desired substring;
+        "                             ┌─┤ the `-1` offset excludes the colon
+        let head = strpart(groups, 0, i-1)
+        let tail = strpart(groups, i, j-1-i).':'
+        "                                     │
+        "                                     └─ useful to make sure the next `while` loop
+        "                                        parses `tail` fully
+
+        " This assignment removes the first group from `groups`.
+        " So, after each iteration of the main `while` loop, `groups` gets smaller.
+        " The loop will stop when the only remaining characters are colons / commas.
         let groups = strpart(groups, j)
 
-        let parsed = parsed.ini
-        let i      = matchend(tail, s:even_backslash.':')
-
-        " until `tail` has been completely parsed
+        " update `parsed` and `i` before entering the inner loop
+        let parsed .= head
+        let i       = matchend(tail, s:even_backslash.':')
+        " go on until `tail` has been completely parsed
+        " that is: there's no colon left
         while i != -1
-            " In 'if:else:endif':
+            " In 'if:else:endif' :
             "
-            "         • ini  = 'if'
-            "         • word = 'else'  (1st iteration)
-            "         • word = 'endif' (2nd iteration)
-
+            "         • head = 'if'       assigned in the outer loop
+            "         • word = 'else'     assigned in the 1st iteration of the inner loop
+            "         • word = 'endif'    assigned in the 2nd iteration of the inner loop
             let word    = strpart(tail, 0, i-1)
             let tail    = strpart(tail, i)
+            let parsed .= ':'.s:resolve(head, word, 'word')
             let i       = matchend(tail, s:even_backslash.':')
-            let parsed .= ':'.s:resolve(ini, word, 'word')
         endwhile
 
-        let parsed = parsed.','
+        " add a comma before parsing and adding another group
+        let parsed .= ','
     endwhile
 
+    " remove the last comma added during the last iteration of the main while loop
     return substitute(parsed, ',$', '', '')
 endfu
 
