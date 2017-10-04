@@ -6,7 +6,8 @@ let g:autoloaded_matchit = 1
 " FIXMES / TODOS {{{1
 
 " FIXME:
-"         let b:match_words .= ',\(foo\):end\1,\(bar\):end\1'
+"         let b:match_words = '\%(\<foo\>\):\<end\1\>,\%(\<bar\>\):\<end\1\>'
+"
 "         foo
 "             bar
 "                 hello
@@ -15,20 +16,8 @@ let g:autoloaded_matchit = 1
 "         endfoo
 "
 " Source the assignment.
-" Position the cursor on `bar`    and hit `]%` → `endbar`    ✔
-" Position the cursor on `endbar` and hit `]%` → ø           ✘ (should move onto `endfoo`)
-"                         ^^^
-" Actually, the problem only occurs when the cursor is on `end`, not `bar`.
+" Position the cursor on `foo` and hit `]%` → ø    ✘
 "
-" Also, source this:
-"
-"         let b:match_words = 'foo:endfoo,bar:endbar'
-"
-" … then hit `]%` on `foo`: the cursor doesn't move. It should go onto `endfoo`.
-" The issue seems related to `searchpair()`. Type this while on `foo`:
-"
-"       echo searchpair('foo\|bar', '', 'endfoo\|endbar')
-
 " FIXME:
 " `[%` (&friends) should ignore triple curly braces
 " They don't, probably because of 'mps' which contains `{:}`.
@@ -264,6 +253,8 @@ fu! matchit#next_word(fwd, mode) abort "{{{2
         return
     endif
 
+    let g:motion_to_repeat = a:fwd ? '%' : 'g%'
+
     call s:set_ic()
     call s:set_pat()
 
@@ -387,6 +378,8 @@ fu! matchit#next_unmatched(fwd, mode) abort "{{{2
     endif
     let level = v:count1
 
+    let g:motion_to_repeat = a:fwd ? ']%' : '[%'
+
     let [ old_ic, startline, startcol ] = s:get_info()
     call s:set_ic()
     call s:set_pat()
@@ -430,6 +423,7 @@ fu! matchit#next_unmatched(fwd, mode) abort "{{{2
             \            '\\),\\(',
             \            'g')
 
+
     " '\(\<return\>:\<endfunction\>\),\(\<elseif\>:\<endif\>\)'
     let end = substitute(end, '^.\{-}'.s:even_backslash.':', '\\(', '').'\)'
 
@@ -459,23 +453,6 @@ fu! matchit#next_unmatched(fwd, mode) abort "{{{2
 
     mark '
     while level
-        " start
-        " '\%(foo\)\|\%(bar\)\|\%((\)\|\%({\)\|\%(\[\)\|\%(\/\*\)\|\%(#\s*if\%(def\)\?\)'
-
-        " end
-        " '\%(endfoo\)\|\%(endbar\)\|\%()\)\|\%(}\)\|\%(\]\)\|\%(\*\/\)\|\%(#\s*else\>\|#\s*elif\>\|#\s*endif\>\)'
-
-        " fwd
-        " 1
-
-        " skip
-        " '0'
-
-        " let g:start = '\%(foo\)\|\%(bar\)\|\%((\)\|\%({\)\|\%(\[\)\|\%(\/\*\)\|\%(#\s*if\%(def\)\?\)'
-        " let g:end = '\%(endfoo\)\|\%(endbar\)\|\%()\)\|\%(}\)\|\%(\]\)\|\%(\*\/\)\|\%(#\s*else\>\|#\s*elif\>\|#\s*endif\>\)'
-        " let g:fwd = 1
-        " let g:skip = '0'
-
         if searchpair(start, '', end, (a:fwd ? 'W' : 'bW'), skip) < 1
             call s:clean_up(old_ic, a:mode)
             return
