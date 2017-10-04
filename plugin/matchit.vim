@@ -22,8 +22,8 @@ nno <silent> [%     :<c-u>call matchit#next_unmatched(0, 'n')<cr>
 xno <silent> ]%     :<c-u>call matchit#next_unmatched(1, 'v')<cr>m'gv``
 xno <silent> [%     :<c-u>call matchit#next_unmatched(0, 'v')<cr>m'gv``
 
-ono <silent> ]%    v:<c-u>call matchit#next_unmatched('W',  'o')<cr>
-ono <silent> [%    v:<c-u>call matchit#next_unmatched('bW', 'o')<cr>
+ono <silent> ]%    v:<c-u>call matchit#next_unmatched(1, 'o')<cr>
+ono <silent> [%    v:<c-u>call matchit#next_unmatched(0, 'o')<cr>
 
 " Text object:
 
