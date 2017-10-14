@@ -133,7 +133,7 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
     "
     " This is only a problem if we end up moving in the forward direction.
     elseif a:0 && ( startline < cur_line
-    \||             startline == cur_line && startcol < cur_col)
+    \||             startline == cur_line && startcol < cur_col )
 
             let line = getline('.')
 
@@ -149,6 +149,8 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
 
             if end_col > cur_col
                 call cursor(0, end_col)
+                "           │
+                "           └─ stay on current line
             endif
     endif
 endfu
@@ -755,7 +757,11 @@ endfu
 fu! s:set_ic() abort "{{{2
     " If we've set up `b:match_ignorecase` differently than `&ignorecase`,
     " then save the latter, before resetting it according to `b:match_ignorecase`.
-    if exists('b:match_ignorecase') && b:match_ignorecase != &ic
+    if get(b:, 'match_ignorecase', &ic) != &ic
+    "                              │
+    "                              └─ by default, b:match_ignorecase is not set up
+    "                              so it's not different than `&ic`, because it doesn't exist;
+    "                              and if by default, it's not different, then it's the same
         let &ic = b:match_ignorecase
     endif
 endfu
