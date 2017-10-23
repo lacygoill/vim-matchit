@@ -200,9 +200,9 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     "
     " … then extract "tag" from a:line and return "<tag>:</tag>".
 
-    if a:line !~ a:prefix
-              \. substitute(a:group, s:even_backslash.'\zs:', '\\|', 'g')
-              \. a:suffix
+    if a:line !~  a:prefix
+    \            . substitute(a:group, s:even_backslash.'\zs:', '\\|', 'g')
+    \            . a:suffix
         return a:group
     endif
 
@@ -336,10 +336,10 @@ fu! matchit#next_word(fwd, mode) abort "{{{2
         let middle = ''
     endif
 
-    let flags =  a:fwd && line =~ prefix.end.suffix
-            \|| !a:fwd && line !~ prefix.start.suffix
-            \?       'bW'
-            \:       'W'
+    let flags =     a:fwd && line =~ prefix.end.suffix
+    \           || !a:fwd && line !~ prefix.start.suffix
+    \           ?      'bW'
+    \           :      'W'
 
     let skip = get(b:, 'match_skip', 's:comment\|string')
     let skip = s:parse_skip(skip)
@@ -792,9 +792,9 @@ fu! s:set_pat() abort "{{{2
         " ┌───────────┤ ┌───────┤ ┌────────────────────────────────────────────────┤
         " (:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>
 
-        let def_words = escape(&l:mps, '[$^.*~\/?]')
-                     \. (!empty(&l:mps) ? ',' : '')
-                     \. '\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>'
+        let def_words =   escape(&l:mps, '[$^.*~\/?]')
+        \               . (!empty(&l:mps) ? ',' : '')
+        \               . '\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>'
 
         " We store the last used value of `b:match_words` and `&l:mps` in
         " script-local variables. Update them.
