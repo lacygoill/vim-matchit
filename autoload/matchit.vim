@@ -760,7 +760,7 @@ fu! s:set_ic() abort "{{{2
     if get(b:, 'match_ignorecase', &ic) != &ic
     "                              │
     "                              └─ by default, b:match_ignorecase is not set up
-    "                              so it's not different than `&ic`, because it doesn't exist;
+    "                              so it's not different from `&ic`, because it doesn't exist;
     "                              and if by default, it's not different, then it's the same
         let &ic = b:match_ignorecase
     endif
