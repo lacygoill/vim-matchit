@@ -16,7 +16,7 @@ let g:autoloaded_matchit = 1
 "         endfoo
 "
 " Source the assignment.
-" Position the cursor on `foo` and hit `]%` → ø    ✘
+" Position the cursor on `foo` and hit `]%` → ∅    ✘
 "
 " FIXME:
 " `[%` (&friends) should ignore triple curly braces
