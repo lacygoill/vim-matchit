@@ -5,27 +5,27 @@ let g:loaded_matchit = 1
 
 " Mappings {{{1
 
-nno <silent> %      :<c-u>call matchit#next_word(1, 'n')<cr>
-nno <silent> g%     :<c-u>call matchit#next_word(0, 'n')<cr>
+nno <silent><unique>  %    :<c-u>call matchit#next_word(1, 'n')<cr>
+nno <silent><unique>  g%   :<c-u>call matchit#next_word(0, 'n')<cr>
 
-xno <silent> %      :<c-u>call matchit#next_word(1, 'v')<cr>m'gv``
-xno <silent> g%     :<c-u>call matchit#next_word(0, 'v')<cr>m'gv``
+xno <silent><unique>  %    :<c-u>call matchit#next_word(1, 'v')<cr>m'gv``
+xno <silent><unique>  g%   :<c-u>call matchit#next_word(0, 'v')<cr>m'gv``
 
-ono <silent> %     v:<c-u>call matchit#next_word(1, 'o')<cr>
-ono <silent> g%    v:<c-u>call matchit#next_word(0, 'o')<cr>
+ono <silent><unique>  %   v:<c-u>call matchit#next_word(1, 'o')<cr>
+ono <silent><unique>  g%  v:<c-u>call matchit#next_word(0, 'o')<cr>
 
 " Analogues of [{ and ]} using matching patterns:
 
-nno <silent> ]%     :<c-u>call matchit#next_unmatched(1, 'n')<cr>
-nno <silent> [%     :<c-u>call matchit#next_unmatched(0, 'n')<cr>
+nno <silent><unique> ]%   :<c-u>call matchit#next_unmatched(1, 'n')<cr>
+nno <silent><unique> [%   :<c-u>call matchit#next_unmatched(0, 'n')<cr>
 
-xno <silent> ]%     :<c-u>call matchit#next_unmatched(1, 'v')<cr>m'gv``
-xno <silent> [%     :<c-u>call matchit#next_unmatched(0, 'v')<cr>m'gv``
+xno <silent><unique> ]%   :<c-u>call matchit#next_unmatched(1, 'v')<cr>m'gv``
+xno <silent><unique> [%   :<c-u>call matchit#next_unmatched(0, 'v')<cr>m'gv``
 
-ono <silent> ]%    v:<c-u>call matchit#next_unmatched(1, 'o')<cr>
-ono <silent> [%    v:<c-u>call matchit#next_unmatched(0, 'o')<cr>
+ono <silent><unique> ]%  v:<c-u>call matchit#next_unmatched(1, 'o')<cr>
+ono <silent><unique> [%  v:<c-u>call matchit#next_unmatched(0, 'o')<cr>
 
 " Text object:
 
-xmap a% o<esc>[%v%
-ono  a% vo<esc>[%v%
+xmap <unique>  a%  o<esc>[%v%
+ono  <unique>  a%  vo<esc>[%v%
