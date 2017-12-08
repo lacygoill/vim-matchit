@@ -450,6 +450,8 @@ fu! matchit#next_unmatched(fwd, mode) abort "{{{2
         catch /\v^Vim%(\(\a+\))?:E363/
             " We won't find anything, so skip searching, should keep Vim responsive.
             return
+        catch
+            call my_lib#catch_error()
         endtry
     endif
 
