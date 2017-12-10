@@ -1,8 +1,3 @@
-if exists('g:autoloaded_matchit')
-    finish
-endif
-let g:autoloaded_matchit = 1
-
 " FIXMES / TODOS {{{1
 
 " FIXME:
