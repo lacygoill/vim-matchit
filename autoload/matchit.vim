@@ -239,7 +239,7 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     return head.':'.tailBR
 endfu
 
-fu! matchit#next_word(fwd, mode) abort "{{{2
+fu! matchit#next_word(is_fwd, mode) abort "{{{2
     let [ old_ic, startline, startcol ] = s:get_info()
 
     " Use default behavior if called with a count.
@@ -250,7 +250,7 @@ fu! matchit#next_word(fwd, mode) abort "{{{2
         return
     endif
 
-    let g:motion_to_repeat = a:fwd ? '%' : 'g%'
+    let g:motion_to_repeat = a:is_fwd ? '%' : 'g%'
 
     call s:set_ic()
     call s:set_pat()
@@ -326,13 +326,13 @@ fu! matchit#next_word(fwd, mode) abort "{{{2
     let middle = substitute(middle, s:even_backslash.'\zs\\(', '\\%(', 'g')
     let end    = substitute(end,    s:even_backslash.'\zs\\(', '\\%(', 'g')
 
-    if   a:fwd && line =~ prefix.end.suffix
-    \|| !a:fwd && line =~ prefix.start.suffix
+    if   a:is_fwd && line =~ prefix.end.suffix
+    \|| !a:is_fwd && line =~ prefix.start.suffix
         let middle = ''
     endif
 
-    let flags =     a:fwd && line =~ prefix.end.suffix
-    \           || !a:fwd && line !~ prefix.start.suffix
+    let flags =     a:is_fwd && line =~ prefix.end.suffix
+    \           || !a:is_fwd && line !~ prefix.start.suffix
     \           ?      'bW'
     \           :      'W'
 
@@ -359,7 +359,7 @@ fu! matchit#next_word(fwd, mode) abort "{{{2
     call s:clean_up(old_ic, a:mode, startline, startcol, middle.'\|'.end)
 endfu
 
-fu! matchit#next_unmatched(fwd, mode) abort "{{{2
+fu! matchit#next_unmatched(is_fwd, mode) abort "{{{2
     " Jump to the nearest unmatched:
     "
     "         • (
@@ -375,7 +375,7 @@ fu! matchit#next_unmatched(fwd, mode) abort "{{{2
     endif
     let level = v:count1
 
-    let g:motion_to_repeat = a:fwd ? ']%' : '[%'
+    let g:motion_to_repeat = a:is_fwd ? ']%' : '[%'
 
     let [ old_ic, startline, startcol ] = s:get_info()
     call s:set_ic()
@@ -452,7 +452,7 @@ fu! matchit#next_unmatched(fwd, mode) abort "{{{2
 
     mark '
     while level
-        if searchpair(start, '', end, (a:fwd ? 'W' : 'bW'), skip) < 1
+        if searchpair(start, '', end, (a:is_fwd ? 'W' : 'bW'), skip) < 1
             call s:clean_up(old_ic, a:mode)
             return
         endif
