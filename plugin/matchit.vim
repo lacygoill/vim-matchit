@@ -8,10 +8,6 @@ let g:loaded_matchit = 1
 noremap  <expr><silent><unique>   %   matchit#percent_rhs(1)
 noremap  <expr><silent><unique>  g%   matchit#percent_rhs(0)
 
-nno  <silent>  <plug>(matchit-next-word-normal)   :<c-u>call matchit#next_word('n')<cr>
-xno  <silent>  <plug>(matchit-next-word-visual)   :<c-u>call matchit#next_word('v')<cr>m'gv``
-ono  <silent>  <plug>(matchit-next-word-op)      v:<c-u>call matchit#next_word('o')<cr>
-
 " Analogues of [{ and ]} using matching patterns:
 
 nno  <silent><unique>  ]%   :<c-u>call matchit#next_unmatched(1, 'n')<cr>
