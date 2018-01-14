@@ -121,7 +121,7 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
     exe 'set '.(a:old_ic ?  'ic' : 'noic')
 
     " Open folds, if appropriate.
-    if a:mode != 'o'
+    if a:mode != 'no'
         if &foldopen =~ 'percent'
             norm! zv
         endif
@@ -244,10 +244,9 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     return head.':'.tailBR
 endfu
 
-fu! matchit#next_word(mode) abort "{{{2
+fu! matchit#next_word(is_fwd, mode) abort "{{{2
     " The direction has been encoded as a special kind of space, and typed
     " directly in the typeahead buffer. Consume it, and decode it.
-    let is_fwd = input('') ==# "\u2001" ? 1 : 0
     let [ old_ic, startline, startcol ] = s:get_info()
 
     " Use default behavior if called with a count.
@@ -332,13 +331,13 @@ fu! matchit#next_word(mode) abort "{{{2
     let middle = substitute(middle, s:even_backslash.'\zs\\(', '\\%(', 'g')
     let end    = substitute(end,    s:even_backslash.'\zs\\(', '\\%(', 'g')
 
-    if   is_fwd && line =~ prefix.end.suffix
-    \|| !is_fwd && line =~ prefix.start.suffix
+    if   a:is_fwd && line =~ prefix.end.suffix
+    \|| !a:is_fwd && line =~ prefix.start.suffix
         let middle = ''
     endif
 
-    let flags =     is_fwd && line =~ prefix.end.suffix
-    \           || !is_fwd && line !~ prefix.start.suffix
+    let flags =     a:is_fwd && line =~ prefix.end.suffix
+    \           || !a:is_fwd && line !~ prefix.start.suffix
     \           ?      'bW'
     \           :      'W'
 
@@ -624,32 +623,23 @@ endfu
 
 fu! matchit#percent_rhs(is_fwd) abort "{{{2
     let mode = mode(1)
-    " choose the right keysequence to type to invoke `matchit#next_word()`
-    " with the right arguments
-    let seq = index(['v', 'V', "\<c-v>"], mode) >= 0
-    \?            "\<plug>(matchit-next-word-visual)"
-    \:        mode ==# 'no'
-    \?            "\<plug>(matchit-next-word-op)"
-    \:            "\<plug>(matchit-next-word-normal)"
-
-    " Why?{{{
+    " TODO:
+    " Try to remove  m'gv``  and use `norm! gv` inside `matchit#next_word()` instead.
+    " Why the first `%s`?{{{
     "
-    " We  need to  tell  `matchit#next_word()`  in which  direction  we want  to
-    " move.  We're going to pass this  information via the typeahead buffer.  We
-    " write  the  direction  inside  the latter  directly  after  the  `<plug>`.
-    " `matchit#next_word()` will consume it with `input()`.
-    "}}}
-    " Ok, but why those unicode characters?{{{
+    " By default,  `%` and  `g%` are  inclusive motions:  they include  the last
+    " character (the one nearest from the end of the buffer).
     "
-    " We could type the direction argument, as it is, `1` or `0`.
-    " But it would be printed on the command-line. Noise.
-    " So, instead, we encode it in a special kind of space, which is invisible.
-    " `matchit#next_word()` will decode it.
+    " `matchit#next_word()` invokes  `search()` which  seems to be  an exclusive
+    " motion  (like `/`):  the last  character it  finds isn't  included in  the
+    " object.  We want it, so we add  `v`, to make the motion inclusive like the
+    " original one.
     "}}}
-    let seq .= (a:is_fwd ? "\u2001" : "\u2000")
-    \         ."\<cr>"
-    call feedkeys(seq, 'i')
-    return ''
+    return printf("%s:\<c-u>call matchit#next_word(%d,%s)\<cr>%s",
+    \              mode ==# 'no' ? 'v' : '',
+    \              a:is_fwd,
+    \              string(mode),
+    \              index(['v', 'V', "\<c-v>"], mode) >=0 ? "m'gv``" : '')
 endfu
 
 fu! s:ref(string, d, ...) abort "{{{2
