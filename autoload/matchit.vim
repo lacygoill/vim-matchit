@@ -828,7 +828,7 @@ fu! s:set_pat() abort "{{{2
 
         " There's a backref in `match_words` IFF we can find an odd number of{{{
         " backslashes in front of a digit.
-        " Watch:
+        " MWE:
         "         3  →          3    (NOT a backref)
         "       \\3  →      \ + 3    (")
         "     \\\\3  →  \ + \ + 3    (")
