@@ -380,7 +380,7 @@ fu! matchit#next_unmatched(is_fwd, mode) abort "{{{2
     endif
     let level = v:count1
 
-    sil! call lg#motion#repeatable#main#set_last_used(a:is_fwd ? ']%' : '[%', 1)
+    sil! call lg#motion#repeatable#make#set_last_used(a:is_fwd ? ']%' : '[%', 1)
 
     let [ old_ic, startline, startcol ] = s:get_info()
     call s:set_ic()
