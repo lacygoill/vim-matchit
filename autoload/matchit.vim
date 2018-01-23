@@ -624,6 +624,13 @@ endfu
 fu! matchit#percent_rhs(is_fwd) abort "{{{2
     let mode = mode(1)
 
+    " If we're in visual block mode, we can't pass `C-v` directly.
+    " It's going to by directly typed on the command-line.
+    " On the command-line, `C-v` means:
+    "
+    "     “insert the next character literally”
+    "
+    " The solution is to double `C-v`.
     if mode ==# "\<c-v>"
         let mode = "\<c-v>\<c-v>"
     endif
