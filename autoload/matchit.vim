@@ -623,6 +623,11 @@ endfu
 
 fu! matchit#percent_rhs(is_fwd) abort "{{{2
     let mode = mode(1)
+
+    if mode ==# "\<c-v>"
+        let mode = "\<c-v>\<c-v>"
+    endif
+
     " TODO:
     " Try to remove  m'gv``  and use `norm! gv` inside `matchit#next_word()` instead.
     " Why the first `%s`?{{{
@@ -639,7 +644,7 @@ fu! matchit#percent_rhs(is_fwd) abort "{{{2
     \              mode ==# 'no' ? 'v' : '',
     \              a:is_fwd,
     \              string(mode),
-    \              index(['v', 'V', "\<c-v>"], mode) >=0 ? "m'gv``" : '')
+    \              index(['v', 'V', "\<c-v>\<c-v>"], mode) >=0 ? "m'gv``" : '')
 endfu
 
 fu! s:ref(string, d, ...) abort "{{{2
