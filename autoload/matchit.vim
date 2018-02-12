@@ -76,7 +76,7 @@ fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
     endif
 
     let current = strpart(tail, 0, i-1)
-    if a:branch == ''
+    if a:branch is# ''
         let currpat = current
     else
         let currpat = substitute(current, s:even_backslash.a:branch, '\\|', 'g')
@@ -90,7 +90,7 @@ fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
         endif
 
         let current = strpart(tail, 0, i-1)
-        if a:branch == ''
+        if a:branch is# ''
             let currpat = current
         else
             let currpat = substitute(current, s:even_backslash.a:branch, '\\|', 'g')
@@ -375,7 +375,7 @@ fu! matchit#next_unmatched(is_fwd, mode) abort "{{{2
     "         • endif
     "         • </tag>
 
-    if get(b:, 'match_words', '') == ''
+    if get(b:, 'match_words', '') is# ''
         return
     endif
     let level = v:count1
@@ -481,14 +481,14 @@ fu! s:parse_skip(str) abort "{{{2
     "   R:foo becomes (text before cursor) !~ foo
 
     let skip = a:str
-    if skip[1] == ':'
-        let skip = (skip[0] == 's'
+    if skip[1] is# ':'
+        let skip = (skip[0] is# 's'
         \?              "synIDattr(synID(line('.'),col('.'),1),'name') =~? "
-        \:          skip[0] == 'S'
+        \:          skip[0] is# 'S'
         \?              "synIDattr(synID(line('.'),col('.'),1),'name') !~? "
-        \:          skip[0] == 'r'
+        \:          skip[0] is# 'r'
         \?              "strpart(getline('.'),0,col('.'))=~"
-        \:          skip[0] == 'R'
+        \:          skip[0] is# 'R'
         \?              "strpart(getline('.'),0,col('.'))!~"
         \:          skip)
         \           .string(strpart(skip,2))
@@ -631,7 +631,7 @@ fu! matchit#percent_rhs(is_fwd) abort "{{{2
     "     “insert the next character literally”
     "
     " The solution is to double `C-v`.
-    if mode ==# "\<c-v>"
+    if mode is# "\<c-v>"
         let mode = "\<c-v>\<c-v>"
     endif
 
@@ -648,7 +648,7 @@ fu! matchit#percent_rhs(is_fwd) abort "{{{2
     " original one.
     "}}}
     return printf("%s:\<c-u>call matchit#next_word(%d,%s)\<cr>%s",
-    \              mode ==# 'no' ? 'v' : '',
+    \              mode is# 'no' ? 'v' : '',
     \              a:is_fwd,
     \              string(mode),
     \              index(['v', 'V', "\<c-v>\<c-v>"], mode) >=0 ? "m'gv``" : '')
@@ -683,7 +683,7 @@ fu! s:ref(string, d, ...) abort "{{{2
             let match = strpart(match, index)
         endwhile
         let start = len - strlen(match)
-        if a:0 == 1 && a:1 == 'start'
+        if a:0 == 1 && a:1 is# 'start'
             return start - 2
         endif
         let cnt = 1
@@ -693,7 +693,7 @@ fu! s:ref(string, d, ...) abort "{{{2
                 return ''
             endif
             " Increment if an open, decrement if a ')':
-            let cnt += match[index] == '(' ? 1 : -1   " ')'
+            let cnt += match[index] is# '(' ? 1 : -1   " ')'
             " let cnt = stridx('0(', match[index]) + cnt
             let match = strpart(match, index+1)
         endwhile
@@ -761,7 +761,7 @@ fu! s:resolve(head, word, output) abort "{{{2
 
         while b <= s:count(substitute(backref, '\\\\', '', 'g'), '\(', '1')
         \&&   s < 10
-            if table[s] == '-'
+            if table[s] is# '-'
                 if w + b < 10
                     " let table[s] = w + b
                     let table = strpart(table, 0, s).(w+b).strpart(table, s+1)
@@ -782,9 +782,9 @@ fu! s:resolve(head, word, output) abort "{{{2
 
     let word = substitute(word, s:even_backslash.'\zs:', '\\', 'g')
 
-    return a:output == 'table'
+    return a:output is# 'table'
     \?         table
-    \:     a:output == 'word'
+    \:     a:output is# 'word'
     \?         word
     \:     table.word
 endfu
