@@ -175,7 +175,7 @@ fu! s:count(string, pattern, ...) abort "{{{2
     let foo    = a:string
     let index  = matchend(foo, pat)
 
-    while index != -1
+    while index !=# -1
         let result = result + 1
         let foo    = strpart(foo, index)
         let index  = matchend(foo, pat)
@@ -592,7 +592,7 @@ fu! s:parse_words(groups) abort "{{{2
         let i       = matchend(tail, s:even_backslash.':')
         " go on until `tail` has been completely parsed
         " that is: there's no colon left
-        while i != -1
+        while i !=# -1
             " In 'if:else:endif' :
             "
             "         • head = 'if'       assigned in                      the outer loop
@@ -734,7 +734,7 @@ fu! s:resolve(head, word, output) abort "{{{2
     let table = '----------'
 
     " As long as there are back references to be replaced.
-    while i != -2
+    while i !=# -2
         let d = word[i]
         let backref = s:ref(a:head, d)
 
@@ -792,7 +792,7 @@ endfu
 fu! s:set_ic() abort "{{{2
     " If we've set up `b:match_ignorecase` differently than `&ignorecase`,
     " then save the latter, before resetting it according to `b:match_ignorecase`.
-    if get(b:, 'match_ignorecase', &ic) != &ic
+    if get(b:, 'match_ignorecase', &ic) !=# &ic
     "                              │
     "                              └─ by default, b:match_ignorecase is not set up
     "                              so it's not different from `&ic`, because it doesn't exist;
