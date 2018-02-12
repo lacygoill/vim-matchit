@@ -85,7 +85,7 @@ fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
     while a:string !~ a:prefix . currpat . a:suffix
         let tail = strpart(tail, i)
         let i    = matchend(tail, s:even_backslash.a:comma)
-        if i == -1
+        if i ==# -1
             return -1
         endif
 
@@ -133,7 +133,7 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
     "
     " This is only a problem if we end up moving in the forward direction.
     elseif a:0 && ( startline < cur_line
-    \||             startline == cur_line && startcol < cur_col )
+    \||             startline ==# cur_line && startcol <# cur_col )
 
             let line = getline('.')
 
@@ -280,7 +280,7 @@ fu! matchit#next_word(is_fwd, mode) abort "{{{2
     let regex   = s:wholematch(line, s:all_words, startcol-1)
     let cur_col = match(line, regex)
     " If there is no match, give up.
-    if cur_col == -1
+    if cur_col ==# -1
         call s:clean_up(old_ic, a:mode)
         return
     endif
@@ -669,7 +669,7 @@ fu! s:ref(string, d, ...) abort "{{{2
     "       let bar = s:ref(string, d, "len")
 
     let len = strlen(a:string)
-    if a:d == 0
+    if a:d ==# 0
         let start = 0
     else
         let cnt   = a:d
@@ -677,19 +677,19 @@ fu! s:ref(string, d, ...) abort "{{{2
         while cnt
             let cnt -= 1
             let index = matchend(match, s:even_backslash.'\\(')
-            if index == -1
+            if index ==# -1
                 return ''
             endif
             let match = strpart(match, index)
         endwhile
         let start = len - strlen(match)
-        if a:0 == 1 && a:1 is# 'start'
+        if a:0 ==# 1 && a:1 is# 'start'
             return start - 2
         endif
         let cnt = 1
         while cnt
             let index = matchend(match, s:even_backslash.'\\(\|\\)') - 1
-            if index == -2
+            if index ==# -2
                 return ''
             endif
             " Increment if an open, decrement if a ')':
@@ -701,9 +701,9 @@ fu! s:ref(string, d, ...) abort "{{{2
         let len -= start + strlen(match)
     endif
 
-    return a:0 == 1
+    return a:0 ==# 1
     \?         len
-    \:     a:0 == 2
+    \:     a:0 ==# 2
     \?         'let '.a:1.'='.start.'| let '.a:2.'='.len
     \:         strpart(a:string, start, len)
 endfu
