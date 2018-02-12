@@ -121,7 +121,7 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
     exe 'set '.(a:old_ic ?  'ic' : 'noic')
 
     " Open folds, if appropriate.
-    if a:mode != 'no'
+    if a:mode isnot# 'no'
         if &foldopen =~ 'percent'
             norm! zv
         endif
@@ -215,7 +215,7 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     let word   = strpart(word, 0, i-1)
 
     " Now, a:line =~ a:prefix . word . a:suffix
-    if wordBR != head
+    if wordBR isnot# head
         let table = s:resolve(head, wordBR, 'table')
     else
         let table = ''
@@ -231,7 +231,7 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     endif
     let d = 9
     while d
-        if table[d] != '-'
+        if table[d] isnot# '-'
             let backref = substitute(a:line, a:prefix.word.a:suffix, '\'.table[d], '')
             " Are there any other characters that should be escaped?
             let backref = escape(backref, '*,:')
@@ -817,7 +817,7 @@ fu! s:set_pat() abort "{{{2
 
     let match_words = get(b:, 'match_words', '')
 
-    if match_words != s:last_words || &l:mps != s:last_mps
+    if match_words isnot# s:last_words || &l:mps isnot# s:last_mps
 
         "             ┌─ default pairs stored in 'mps'
         "             │
