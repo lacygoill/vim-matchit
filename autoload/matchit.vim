@@ -69,22 +69,22 @@ fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
     " if no optional arguments are given; return <patn>,<altn> if a:1 is given.
 
     let tail = (a:patterns =~ a:comma.'$' ? a:patterns : a:patterns . a:comma)
-    let i    = matchend(tail, s:even_backslash.a:comma)
+    let i    = matchend(tail, s:EVEN_BACKSLASH.a:comma)
     if a:0
         let alttail = (a:1 =~ a:comma.'$' ? a:1 : a:1 . a:comma)
-        let j = matchend(alttail, s:even_backslash.a:comma)
+        let j = matchend(alttail, s:EVEN_BACKSLASH.a:comma)
     endif
 
     let current = strpart(tail, 0, i-1)
     if a:branch is# ''
         let currpat = current
     else
-        let currpat = substitute(current, s:even_backslash.a:branch, '\\|', 'g')
+        let currpat = substitute(current, s:EVEN_BACKSLASH.a:branch, '\\|', 'g')
     endif
 
     while a:string !~ a:prefix . currpat . a:suffix
         let tail = strpart(tail, i)
-        let i    = matchend(tail, s:even_backslash.a:comma)
+        let i    = matchend(tail, s:EVEN_BACKSLASH.a:comma)
         if i ==# -1
             return -1
         endif
@@ -93,12 +93,12 @@ fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
         if a:branch is# ''
             let currpat = current
         else
-            let currpat = substitute(current, s:even_backslash.a:branch, '\\|', 'g')
+            let currpat = substitute(current, s:EVEN_BACKSLASH.a:branch, '\\|', 'g')
         endif
 
         if a:0
             let alttail = strpart(alttail, j)
-            let j       = matchend(alttail, s:even_backslash.a:comma)
+            let j       = matchend(alttail, s:EVEN_BACKSLASH.a:comma)
         endif
     endwhile
 
@@ -201,16 +201,16 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     " … then extract "tag" from a:line and return "<tag>:</tag>".
 
     if a:line !~  a:prefix
-    \            . substitute(a:group, s:even_backslash.'\zs:', '\\|', 'g')
+    \            . substitute(a:group, s:EVEN_BACKSLASH.'\zs:', '\\|', 'g')
     \            . a:suffix
         return a:group
     endif
 
-    let i      = matchend(a:groupBR, s:even_backslash.':')
+    let i      = matchend(a:groupBR, s:EVEN_BACKSLASH.':')
     let head   = strpart(a:groupBR, 0, i-1)
     let tailBR = strpart(a:groupBR, i)
     let word   = s:choose(a:group, a:line, ':', '', a:prefix, a:suffix, a:groupBR)
-    let i      = matchend(word, s:even_backslash.':')
+    let i      = matchend(word, s:EVEN_BACKSLASH.':')
     let wordBR = strpart(word, i)
     let word   = strpart(word, 0, i-1)
 
@@ -221,7 +221,7 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
         let table = ''
         let d     = 0
         while d < 10
-            if tailBR =~ s:even_backslash.'\\'.d
+            if tailBR =~ s:EVEN_BACKSLASH.'\\'.d
                 let table = table.d
             else
                 let table = table.'-'
@@ -237,7 +237,7 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
             let backref = escape(backref, '*,:')
             exe s:ref(head, d, 'start', 'len')
             let head    = strpart(head, 0, start) . backref . strpart(head, start+len)
-            let tailBR  = substitute(tailBR, s:even_backslash.'\zs\\'.d, escape(backref, '\\&'), 'g')
+            let tailBR  = substitute(tailBR, s:EVEN_BACKSLASH.'\zs\\'.d, escape(backref, '\\&'), 'g')
         endif
         let d -= 1
     endwhile
@@ -305,7 +305,7 @@ fu! matchit#next_word(is_fwd, mode) abort "{{{2
     " group . "," . groupBR, and we pick it apart.
 
     let group   = s:choose(s:pat, line, ',', ':', prefix, suffix, s:pat_unresolved)
-    let i       = matchend(group, s:even_backslash.',')
+    let i       = matchend(group, s:EVEN_BACKSLASH.',')
     let groupBR = strpart(group, i)
     let group   = strpart(group, 0, i-1)
 
@@ -315,21 +315,21 @@ fu! matchit#next_word(is_fwd, mode) abort "{{{2
     endif
 
     " Fourth step:  Set the arguments for searchpair().
-    let i      = matchend(group, s:even_backslash.':')
-    let j      = matchend(group, '.*'.s:even_backslash.':')
+    let i      = matchend(group, s:EVEN_BACKSLASH.':')
+    let j      = matchend(group, '.*'.s:EVEN_BACKSLASH.':')
     let start  = strpart(group, 0, i-1)
-    let middle = substitute(strpart(group, i,j-i-1), s:even_backslash.'\zs:', '\\|', 'g')
+    let middle = substitute(strpart(group, i,j-i-1), s:EVEN_BACKSLASH.'\zs:', '\\|', 'g')
     let end    = strpart(group, j)
 
     "Un-escape the remaining , and : characters.
-    let start  = substitute(start,  s:even_backslash.'\zs\\\(:\|,\)', '\1', 'g')
-    let middle = substitute(middle, s:even_backslash.'\zs\\\(:\|,\)', '\1', 'g')
-    let end    = substitute(end,    s:even_backslash.'\zs\\\(:\|,\)', '\1', 'g')
+    let start  = substitute(start,  s:EVEN_BACKSLASH.'\zs\\\(:\|,\)', '\1', 'g')
+    let middle = substitute(middle, s:EVEN_BACKSLASH.'\zs\\\(:\|,\)', '\1', 'g')
+    let end    = substitute(end,    s:EVEN_BACKSLASH.'\zs\\\(:\|,\)', '\1', 'g')
 
     " searchpair() requires that these patterns avoid \(\) groups.
-    let start  = substitute(start,  s:even_backslash.'\zs\\(', '\\%(', 'g')
-    let middle = substitute(middle, s:even_backslash.'\zs\\(', '\\%(', 'g')
-    let end    = substitute(end,    s:even_backslash.'\zs\\(', '\\%(', 'g')
+    let start  = substitute(start,  s:EVEN_BACKSLASH.'\zs\\(', '\\%(', 'g')
+    let middle = substitute(middle, s:EVEN_BACKSLASH.'\zs\\(', '\\%(', 'g')
+    let end    = substitute(end,    s:EVEN_BACKSLASH.'\zs\\(', '\\%(', 'g')
 
     if   a:is_fwd && line =~ prefix.end.suffix
     \|| !a:is_fwd && line =~ prefix.start.suffix
@@ -393,26 +393,26 @@ fu! matchit#next_unmatched(is_fwd, mode) abort "{{{2
 
     " '\<function\>\),\(\<if\>:\<elseif\>:\<endif\>'
     let start = substitute(s:pat,
-              \            s:even_backslash.'\zs:.\{-}'.s:even_backslash.',',
+              \            s:EVEN_BACKSLASH.'\zs:.\{-}'.s:EVEN_BACKSLASH.',',
               \            '\\),\\(',
               \            'g')
 
     " '\(\<function\>\),\(\<if\>\)'
-    let start = '\('.substitute(start, s:even_backslash.'\zs:.*$', '\\)', '')
+    let start = '\('.substitute(start, s:EVEN_BACKSLASH.'\zs:.*$', '\\)', '')
 
 
 
     " let middle = substitute(s:pat,
-    "            \            s:even_backslash.'\zs,.\{-}'.s:even_backslash.':',
+    "            \            s:EVEN_BACKSLASH.'\zs,.\{-}'.s:EVEN_BACKSLASH.':',
     "            \            '',
     "            \            'g')
 
     " let middle = substitute(middle,
-    "            \            s:even_backslash.'\zs:.\{-}'.s:even_backslash.',',
+    "            \            s:EVEN_BACKSLASH.'\zs:.\{-}'.s:EVEN_BACKSLASH.',',
     "            \            '\\),\\(',
     "            \            'g')
 
-    " let middle = substitute(middle, '^.\{-}'.s:even_backslash.':', '\\(', '').'\)'
+    " let middle = substitute(middle, '^.\{-}'.s:EVEN_BACKSLASH.':', '\\(', '').'\)'
 
 
 
@@ -421,13 +421,13 @@ fu! matchit#next_unmatched(is_fwd, mode) abort "{{{2
 
     " '\<function\>:\<return\>:\<endfunction\>\),\(\<elseif\>:\<endif\>'
     let end = substitute(s:pat,
-            \            s:even_backslash.'\zs,.\{-}'.s:even_backslash.':',
+            \            s:EVEN_BACKSLASH.'\zs,.\{-}'.s:EVEN_BACKSLASH.':',
             \            '\\),\\(',
             \            'g')
 
 
     " '\(\<return\>:\<endfunction\>\),\(\<elseif\>:\<endif\>\)'
-    let end = substitute(end, '^.\{-}'.s:even_backslash.':', '\\(', '').'\)'
+    let end = substitute(end, '^.\{-}'.s:EVEN_BACKSLASH.':', '\\(', '').'\)'
 
     let skip = get(b:, 'match_skip', 's:comment\|string')
 
@@ -517,12 +517,12 @@ fu! s:parse_words(groups) abort "{{{2
     " Why only these 2 kinds? What about “only commas“?
     " Already covered by “commas mixed with possible colons“. Pay attention to “possible“.
 
-    let groups = substitute(a:groups, s:even_backslash.'\zs:\{2,}', ':', 'g')
+    let groups = substitute(a:groups, s:EVEN_BACKSLASH.'\zs:\{2,}', ':', 'g')
 
     "                                                                  ┌ a sequence of colons and commas
     "                                                                  │ containing at least one comma
     "                                                        ┌─────────┤
-    let groups = substitute(groups.',', s:even_backslash.'\zs[:,]*,[:,]*', ',', 'g')
+    let groups = substitute(groups.',', s:EVEN_BACKSLASH.'\zs[:,]*,[:,]*', ',', 'g')
     "                                                                         │
     "                                          replace it with a single comma ┘
 
@@ -554,13 +554,13 @@ fu! s:parse_words(groups) abort "{{{2
         " `match(str, pat)`  / `matchend(str,  pat)` returns  the weight  of the
         " substring up to the the 1st match of `pat`, EXCLUDING / INCLUDING it.
         "
-        " We use `matchend()` instead of `match()` because of `s:even_backslash`.
+        " We use `matchend()` instead of `match()` because of `s:EVEN_BACKSLASH`.
         " We could also probably use `match()` if we suffixed `:` with `\zs`:
         "
-        "         let i = match(groups, s:even_backslash.':\zs')
+        "         let i = match(groups, s:EVEN_BACKSLASH.':\zs')
 "}}}
-        let i = matchend(groups, s:even_backslash.':')
-        let j = matchend(groups, s:even_backslash.',')
+        let i = matchend(groups, s:EVEN_BACKSLASH.':')
+        let j = matchend(groups, s:EVEN_BACKSLASH.',')
 
         " ┌────────┬───────────────┐
         " │ head   │ \(foo\)       │
@@ -589,7 +589,7 @@ fu! s:parse_words(groups) abort "{{{2
 
         " update `parsed` and `i` before entering the inner loop
         let parsed .= head
-        let i       = matchend(tail, s:even_backslash.':')
+        let i       = matchend(tail, s:EVEN_BACKSLASH.':')
         " go on until `tail` has been completely parsed
         " that is: there's no colon left
         while i !=# -1
@@ -610,7 +610,7 @@ fu! s:parse_words(groups) abort "{{{2
             let parsed .= ':'.s:resolve(head, word, 'word')
 
             " move on to the next word
-            let i = matchend(tail, s:even_backslash.':')
+            let i = matchend(tail, s:EVEN_BACKSLASH.':')
         endwhile
 
         " add a comma before parsing and adding another group
@@ -676,7 +676,7 @@ fu! s:ref(string, d, ...) abort "{{{2
         let match = a:string
         while cnt
             let cnt -= 1
-            let index = matchend(match, s:even_backslash.'\\(')
+            let index = matchend(match, s:EVEN_BACKSLASH.'\\(')
             if index ==# -1
                 return ''
             endif
@@ -688,7 +688,7 @@ fu! s:ref(string, d, ...) abort "{{{2
         endif
         let cnt = 1
         while cnt
-            let index = matchend(match, s:even_backslash.'\\(\|\\)') - 1
+            let index = matchend(match, s:EVEN_BACKSLASH.'\\(\|\\)') - 1
             if index ==# -2
                 return ''
             endif
@@ -730,7 +730,7 @@ fu! s:resolve(head, word, output) abort "{{{2
     " preceded by "\".
 
     let word  = a:word
-    let i     = matchend(word, s:even_backslash.'\\\d') - 1
+    let i     = matchend(word, s:EVEN_BACKSLASH.'\\\d') - 1
     let table = '----------'
 
     " As long as there are back references to be replaced.
@@ -777,10 +777,10 @@ fu! s:resolve(head, word, output) abort "{{{2
             endif
         endwhile
         let word = strpart(word, 0, i-1).backref.strpart(word, i+1)
-        let i    = matchend(word, s:even_backslash.'\\\d') - 1
+        let i    = matchend(word, s:EVEN_BACKSLASH.'\\\d') - 1
     endwhile
 
-    let word = substitute(word, s:even_backslash.'\zs:', '\\', 'g')
+    let word = substitute(word, s:EVEN_BACKSLASH.'\zs:', '\\', 'g')
 
     return a:output is# 'table'
     \?         table
@@ -853,28 +853,28 @@ fu! s:set_pat() abort "{{{2
         " in front of a digit.
         "
         " To check this pattern is present inside `match_words`, we need a regex.
-        " An EVEN number of backslashes can be expressed with `s:even_backslash`.
+        " An EVEN number of backslashes can be expressed with `s:EVEN_BACKSLASH`.
         " So, an ODD number of backslashes can be expressed with:
         "
-        "         s:even_backslash.'\\'
+        "         s:EVEN_BACKSLASH.'\\'
         "
         " And to check whether `match_words` contains a backref, we need this regex:
         "
-        "         s:even_backslash.'\\\d'
+        "         s:EVEN_BACKSLASH.'\\\d'
 "}}}
-        if match_words =~ s:even_backslash.'\\\d'
+        if match_words =~ s:EVEN_BACKSLASH.'\\\d'
             let s:has_BR = 1
             let s:pat    = s:parse_words(match_words)
         else
             let s:has_BR = 0
             let s:pat    = match_words
         endif
-        let s:all_words = '\%('.substitute(s:pat, s:even_backslash.'\zs[,:]\+', '\\|', 'g').'\)'
+        let s:all_words = '\%('.substitute(s:pat, s:EVEN_BACKSLASH.'\zs[,:]\+', '\\|', 'g').'\)'
 
         " Reconstruct the pattern with unresolved backrefs.
         let s:pat_unresolved = substitute(match_words.',',
-                             \ s:even_backslash.'\zs[,:]*,[,:]*', ',', 'g')
-        let s:pat_unresolved = substitute(s:pat_unresolved, s:even_backslash.'\zs:\{2,}', ':', 'g')
+                             \ s:EVEN_BACKSLASH.'\zs[,:]*,[,:]*', ',', 'g')
+        let s:pat_unresolved = substitute(s:pat_unresolved, s:EVEN_BACKSLASH.'\zs:\{2,}', ':', 'g')
     endif
 endfu
 
@@ -946,11 +946,11 @@ let s:pat_unresolved = ''
 "
 " When a  colon/comma is  preceded by an  even number of  backslashes, it  has a
 " special meaning. Otherwise, it's literal.
-" That's  why `s:even_backslash`  is useful:  to make  the difference  between a
+" That's  why `s:EVEN_BACKSLASH`  is useful:  to make  the difference  between a
 " literal and special colon/comma.
 "}}}
 "                            ┌ no slash before an even number of slashes
 "                       ┌────┤
-let s:even_backslash = '\\\@<!\%(\\\\\)*'
+let s:EVEN_BACKSLASH = '\\\@<!\%(\\\\\)*'
 "                                └──┤
 "                                   └ 2 slashes
