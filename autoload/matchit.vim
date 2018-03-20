@@ -85,7 +85,7 @@ fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
     while a:string !~ a:prefix . currpat . a:suffix
         let tail = strpart(tail, i)
         let i    = matchend(tail, s:EVEN_BACKSLASH.a:comma)
-        if i ==# -1
+        if i == -1
             return -1
         endif
 
@@ -133,7 +133,7 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
     "
     " This is only a problem if we end up moving in the forward direction.
     elseif a:0 && ( startline < cur_line
-    \||             startline ==# cur_line && startcol <# cur_col )
+    \||             startline == cur_line && startcol < cur_col )
 
             let line = getline('.')
 
@@ -175,7 +175,7 @@ fu! s:count(string, pattern, ...) abort "{{{2
     let foo    = a:string
     let index  = matchend(foo, pat)
 
-    while index !=# -1
+    while index != -1
         let result = result + 1
         let foo    = strpart(foo, index)
         let index  = matchend(foo, pat)
@@ -280,7 +280,7 @@ fu! matchit#next_word(is_fwd, mode) abort "{{{2
     let regex   = s:wholematch(line, s:all_words, startcol-1)
     let cur_col = match(line, regex)
     " If there is no match, give up.
-    if cur_col ==# -1
+    if cur_col == -1
         call s:clean_up(old_ic, a:mode)
         return
     endif
@@ -592,7 +592,7 @@ fu! s:parse_words(groups) abort "{{{2
         let i       = matchend(tail, s:EVEN_BACKSLASH.':')
         " go on until `tail` has been completely parsed
         " that is: there's no colon left
-        while i !=# -1
+        while i != -1
             " In 'if:else:endif' :
             "
             "         • head = 'if'       assigned in                      the outer loop
@@ -669,7 +669,7 @@ fu! s:ref(string, d, ...) abort "{{{2
     "       let bar = s:ref(string, d, "len")
 
     let len = strlen(a:string)
-    if a:d ==# 0
+    if a:d == 0
         let start = 0
     else
         let cnt   = a:d
@@ -677,19 +677,19 @@ fu! s:ref(string, d, ...) abort "{{{2
         while cnt
             let cnt -= 1
             let index = matchend(match, s:EVEN_BACKSLASH.'\\(')
-            if index ==# -1
+            if index == -1
                 return ''
             endif
             let match = strpart(match, index)
         endwhile
         let start = len - strlen(match)
-        if a:0 ==# 1 && a:1 is# 'start'
+        if a:0 == 1 && a:1 is# 'start'
             return start - 2
         endif
         let cnt = 1
         while cnt
             let index = matchend(match, s:EVEN_BACKSLASH.'\\(\|\\)') - 1
-            if index ==# -2
+            if index == -2
                 return ''
             endif
             " Increment if an open, decrement if a ')':
@@ -701,9 +701,9 @@ fu! s:ref(string, d, ...) abort "{{{2
         let len -= start + strlen(match)
     endif
 
-    return a:0 ==# 1
+    return a:0 == 1
     \?         len
-    \:     a:0 ==# 2
+    \:     a:0 == 2
     \?         'let '.a:1.'='.start.'| let '.a:2.'='.len
     \:         strpart(a:string, start, len)
 endfu
@@ -734,7 +734,7 @@ fu! s:resolve(head, word, output) abort "{{{2
     let table = '----------'
 
     " As long as there are back references to be replaced.
-    while i !=# -2
+    while i != -2
         let d = word[i]
         let backref = s:ref(a:head, d)
 
@@ -792,7 +792,7 @@ endfu
 fu! s:set_ic() abort "{{{2
     " If we've set up `b:match_ignorecase` differently than `&ignorecase`,
     " then save the latter, before resetting it according to `b:match_ignorecase`.
-    if get(b:, 'match_ignorecase', &ic) !=# &ic
+    if get(b:, 'match_ignorecase', &ic) != &ic
     "                              │
     "                              └─ by default, b:match_ignorecase is not set up
     "                              so it's not different from `&ic`, because it doesn't exist;
