@@ -287,11 +287,11 @@ fu! matchit#next_word(is_fwd, mode) abort "{{{2
     let end_col = matchend(line, regex)
     let suf     = strlen(line) - end_col
     let prefix  = cur_col
-    \?                '^.*\%'.(cur_col + 1).'c\%('
-    \:                '^\%('
+              \ ?     '^.*\%'.(cur_col + 1).'c\%('
+              \ :     '^\%('
     let suffix  = suf
-    \?                '\)\%'.(end_col + 1).'c.*$'
-    \:                '\)$'
+              \ ?     '\)\%'.(end_col + 1).'c.*$'
+              \ :     '\)$'
 
     " Third step:  Find the group and single word that match, and the original
     " (backref) versions of these.  Then, resolve the backrefs.
@@ -483,15 +483,15 @@ fu! s:parse_skip(str) abort "{{{2
     let skip = a:str
     if skip[1] is# ':'
         let skip = (skip[0] is# 's'
-        \?              "synIDattr(synID(line('.'),col('.'),1),'name') =~? "
-        \:          skip[0] is# 'S'
-        \?              "synIDattr(synID(line('.'),col('.'),1),'name') !~? "
-        \:          skip[0] is# 'r'
-        \?              "strpart(getline('.'),0,col('.'))=~"
-        \:          skip[0] is# 'R'
-        \?              "strpart(getline('.'),0,col('.'))!~"
-        \:          skip)
-        \           .string(strpart(skip,2))
+               \ ?      "synIDattr(synID(line('.'),col('.'),1),'name') =~? "
+               \ :  skip[0] is# 'S'
+               \ ?      "synIDattr(synID(line('.'),col('.'),1),'name') !~? "
+               \ :  skip[0] is# 'r'
+               \ ?      "strpart(getline('.'),0,col('.'))=~"
+               \ :  skip[0] is# 'R'
+               \ ?      "strpart(getline('.'),0,col('.'))!~"
+               \ :  skip)
+               \    .string(strpart(skip,2))
     endif
     return skip
 endfu
@@ -702,10 +702,10 @@ fu! s:ref(string, d, ...) abort "{{{2
     endif
 
     return a:0 ==# 1
-    \?         len
-    \:     a:0 ==# 2
-    \?         'let '.a:1.'='.start.'| let '.a:2.'='.len
-    \:         strpart(a:string, start, len)
+       \ ?     len
+       \ : a:0 ==# 2
+       \ ?     'let '.a:1.'='.start.'| let '.a:2.'='.len
+       \ :     strpart(a:string, start, len)
 endfu
 
 fu! s:resolve(head, word, output) abort "{{{2
@@ -783,10 +783,10 @@ fu! s:resolve(head, word, output) abort "{{{2
     let word = substitute(word, s:EVEN_BACKSLASH.'\zs:', '\\', 'g')
 
     return a:output is# 'table'
-    \?         table
-    \:     a:output is# 'word'
-    \?         word
-    \:     table.word
+       \ ?     table
+       \ : a:output is# 'word'
+       \ ?     word
+       \ : table.word
 endfu
 
 fu! s:set_ic() abort "{{{2
@@ -900,14 +900,14 @@ fu! s:wholematch(line, pat, start) abort "{{{2
     let len = strlen(a:line)
 
     let prefix = a:start
-    \?               '\%<'.(a:start + 2).'c\zs'
-    \:               '^'
+             \ ?     '\%<'.(a:start + 2).'c\zs'
+             \ :     '^'
 
     let group = '\%('.a:pat.'\)'
 
     let suffix = a:start+1 < len
-    \?               '\ze\%>'.(a:start+1).'c'
-    \:               '$'
+             \ ?     '\ze\%>'.(a:start+1).'c'
+             \ :     '$'
 
     if a:line !~ prefix.group.suffix
         let prefix = ''
