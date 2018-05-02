@@ -133,7 +133,7 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
     "
     " This is only a problem if we end up moving in the forward direction.
     elseif a:0 && ( startline < cur_line
-    \||             startline ==# cur_line && startcol < cur_col )
+    \ ||            startline ==# cur_line && startcol < cur_col )
 
             let line = getline('.')
 
@@ -331,8 +331,8 @@ fu! matchit#next_word(is_fwd, mode) abort "{{{2
     let middle = substitute(middle, s:EVEN_BACKSLASH.'\zs\\(', '\\%(', 'g')
     let end    = substitute(end,    s:EVEN_BACKSLASH.'\zs\\(', '\\%(', 'g')
 
-    if   a:is_fwd && line =~ prefix.end.suffix
-    \|| !a:is_fwd && line =~ prefix.start.suffix
+    if    a:is_fwd && line =~ prefix.end.suffix
+    \ || !a:is_fwd && line =~ prefix.start.suffix
         let middle = ''
     endif
 
@@ -760,7 +760,7 @@ fu! s:resolve(head, word, output) abort "{{{2
         let s = d
 
         while b <= s:count(substitute(backref, '\\\\', '', 'g'), '\(', '1')
-        \&&   s < 10
+        \ &&  s < 10
             if table[s] is# '-'
                 if w + b < 10
                     " let table[s] = w + b
@@ -772,7 +772,7 @@ fu! s:resolve(head, word, output) abort "{{{2
                 exe s:ref(backref, b, 'start', 'len')
                 let ref = strpart(backref, start, len)
                 let backref = strpart(backref, 0, start).':'.table[s]
-                           \. strpart(backref, start+len)
+                          \ . strpart(backref, start+len)
                 let s += s:count(substitute(ref, '\\\\', '', 'g'), '\(', '1')
             endif
         endwhile
