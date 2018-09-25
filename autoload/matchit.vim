@@ -114,8 +114,8 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
     " The optional argument is the tail of the matching group.
 
     if a:0
-        let [ startline, startcol, pat ] = a:000
-        let [ cur_line, cur_col ] = getpos('.')[1:2]
+        let [startline, startcol, pat] = a:000
+        let [cur_line, cur_col] = getpos('.')[1:2]
     endif
 
     exe 'set '.(a:old_ic ?  'ic' : 'noic')
@@ -185,7 +185,7 @@ endfu
 
 fu! s:get_info() abort "{{{2
     " In s:clean_up(), we may need to check whether the cursor moved forward.
-    return [ &l:ic, line('.'), col('.') ]
+    return [&l:ic, line('.'), col('.')]
 endfu
 
 fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
@@ -247,7 +247,7 @@ endfu
 fu! matchit#next_word(is_fwd, mode) abort "{{{2
     " The direction has been encoded as a special kind of space, and typed
     " directly in the typeahead buffer. Consume it, and decode it.
-    let [ old_ic, startline, startcol ] = s:get_info()
+    let [old_ic, startline, startcol] = s:get_info()
 
     " Use default behavior if called with a count.
     " Ex:    42%  →  move cursor onto the line at 42% of the file
@@ -382,7 +382,7 @@ fu! matchit#next_unmatched(is_fwd, mode) abort "{{{2
 
     sil! call lg#motion#repeatable#make#set_last_used(a:is_fwd ? ']%' : '[%', {'bwd': ',', 'fwd': ';'})
 
-    let [ old_ic, startline, startcol ] = s:get_info()
+    let [old_ic, startline, startcol] = s:get_info()
     call s:set_ic()
     call s:set_pat()
 
