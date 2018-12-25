@@ -24,8 +24,8 @@ let g:autoloaded_matchit = 1
 "
 " To match a curly brace outside a folding marker, use these patterns:
 "
-"     \%({\@<={{\@=\)\@!\&\%({{\)\@<!{\%({{\)\@!
-"     \%(}\@<=}}\@=\)\@!\&\%(}}\)\@<!}\%(}}\)\@!
+"     \%({\@1<={{\@=\)\@!\&\%({{\)\@2<!{\%({{\)\@!
+"     \%(}\@1<=}}\@=\)\@!\&\%(}}\)\@2<!}\%(}}\)\@!
 
 " TODO:
 "
@@ -436,10 +436,10 @@ fu! matchit#next_unmatched(is_fwd, mode) abort "{{{2
 
     " Third step: call searchpair().
     " Replace '\('--but not '\\('--with '\%(' and ',' with '\|'.
-    let start = substitute(start, '\(\\\@<!\(\\\\\)*\)\@<=\\(', '\\%(', 'g')
+    let start = substitute(start, '\(\\\@1<!\(\\\\\)*\)\@<=\\(', '\\%(', 'g')
     let start = substitute(start, ',', '\\|', 'g')
 
-    let end = substitute(end, '\(\\\@<!\(\\\\\)*\)\@<=\\(', '\\%(', 'g')
+    let end = substitute(end, '\(\\\@1<!\(\\\\\)*\)\@<=\\(', '\\%(', 'g')
     let end = substitute(end, '[:,]', '\\|', 'g')
 
     if skip =~ 'synID' && !exists('g:syntax_on')
@@ -949,8 +949,8 @@ let s:pat_unresolved = ''
 " That's  why `s:EVEN_BACKSLASH`  is useful:  to make  the difference  between a
 " literal and special colon/comma.
 "}}}
-"                            ┌ no slash before an even number of slashes
-"                       ┌────┤
-let s:EVEN_BACKSLASH = '\\\@<!\%(\\\\\)*'
+"                             ┌ no slash before an even number of slashes
+"                       ┌─────┤
+let s:EVEN_BACKSLASH = '\\\@1<!\%(\\\\\)*'
 "                                └──┤
 "                                   └ 2 slashes
