@@ -367,13 +367,13 @@ endfu
 fu! matchit#next_unmatched(is_fwd, mode) abort "{{{2
     " Jump to the nearest unmatched:
     "
-    "         • (
-    "         • if
-    "         • <tag>
+    "         - (
+    "         - if
+    "         - <tag>
     "
-    "         • )
-    "         • endif
-    "         • </tag>
+    "         - )
+    "         - endif
+    "         - </tag>
 
     if get(b:, 'match_words', '') is# ''
         return
@@ -511,8 +511,8 @@ fu! s:parse_words(groups) abort "{{{2
     " A sequence of them doesn't have much sense, and thus should be reduced.
     " There can be 2 kinds of sequences:
     "
-    "       • only colons                          →   should be reduced to a single colon
-    "       • commas mixed with possible colons    →   should be reduced to a single comma
+    "       - only colons                          →   should be reduced to a single colon
+    "       - commas mixed with possible colons    →   should be reduced to a single comma
     "
     " Why only these 2 kinds? What about “only commas“?
     " Already covered by “commas mixed with possible colons“. Pay attention to “possible“.
@@ -532,8 +532,8 @@ fu! s:parse_words(groups) abort "{{{2
     " The rest of the code is an imbrication of while loops.
     " The purpose of the:
     "
-    "         • outer loop is to process groups
-    "         • inner loop is to process words in a group
+    "         - outer loop is to process groups
+    "         - inner loop is to process words in a group
 
     "                     ┌ go on until there's only colons and/or commas in `groups`
     "     ┌───────────────┤
@@ -595,9 +595,9 @@ fu! s:parse_words(groups) abort "{{{2
         while i !=# -1
             " In 'if:else:endif' :
             "
-            "         • head = 'if'       assigned in                      the outer loop
-            "         • word = 'else'     assigned in the 1st iteration of the inner loop
-            "         • word = 'endif'    assigned in the 2nd iteration of the inner loop
+            "         - head = 'if'       assigned in                      the outer loop
+            "         - word = 'else'     assigned in the 1st iteration of the inner loop
+            "         - word = 'endif'    assigned in the 2nd iteration of the inner loop
 
             " next word in the group
             " (group currently processed in the main while loop)
