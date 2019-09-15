@@ -447,7 +447,7 @@ fu! matchit#next_unmatched(is_fwd, mode) abort "{{{2
     else
         try
             exe 'if '.skip."| let skip = '0' | endif"
-        catch /\v^Vim%(\(\a+\))?:E363/
+        catch /\v^Vim%(\(\a+\))?:E363:/
             " We won't find anything, so skip searching, should keep Vim responsive.
             return
         catch
