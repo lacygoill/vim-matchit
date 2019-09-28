@@ -140,17 +140,17 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
             " Check whether the match is a single character.
             " If not, move to the end of the match.
             "
-            "                                  ┌ mid.'\|'.fin
-            "                                  │ Ex:
-            "                                  │     'elseif\|endif'
-            "                                ┌─┤
+            "                                ┌ mid.'\|'.fin
+            "                                │ Ex:
+            "                                │     'elseif\|endif'
+            "                                ├─┐
             let regex   = s:wholematch(line, pat, cur_col-1)
             let end_col = matchend(line, regex)
 
             if end_col > cur_col
                 call cursor(0, end_col)
                 "           │
-                "           └─ stay on current line
+                "           └ stay on current line
             endif
     endif
 endfu
@@ -164,8 +164,8 @@ fu! s:count(string, pattern, ...) abort "{{{2
     let pat = escape(a:pattern, '\')
     if a:0 > 1
         let foo = substitute(a:string, '[^'.a:pattern.']', 'a:1', 'g')
-        "                    ┌─ FIXME: in the original plugin, the author
-        "                    │  wrote `a:string`; doesn't make sense, does it?
+        "                    ┌ FIXME: in the original plugin, the author
+        "                    │ wrote `a:string`; doesn't make sense, does it?
         let foo = substitute(foo, pat, a:2, 'g')
         let foo = substitute(foo, '[^'.a:2.']', '', 'g')
         return strlen(foo)
@@ -262,15 +262,15 @@ fu! matchit#next_word(is_fwd, mode) abort "{{{2
 
     " Second step:  set the following variables:
     "
-    "   ┌─────────┬───────────────────────────────────────────┐
-    "   │ line    │ line on which the cursor started          │
-    "   ├─────────┼───────────────────────────────────────────┤
-    "   │ cur_col │ number of characters before match         │
-    "   ├─────────┼───────────────────────────────────────────┤
-    "   │ prefix  │ regex for start of line to start of match │
-    "   ├─────────┼───────────────────────────────────────────┤
-    "   │ suffix  │ regex for end of match to end of line     │
-    "   └─────────┴───────────────────────────────────────────┘
+    "    ┌─────────┬───────────────────────────────────────────┐
+    "    │ line    │ line on which the cursor started          │
+    "    ├─────────┼───────────────────────────────────────────┤
+    "    │ cur_col │ number of characters before match         │
+    "    ├─────────┼───────────────────────────────────────────┤
+    "    │ prefix  │ regex for start of line to start of match │
+    "    ├─────────┼───────────────────────────────────────────┤
+    "    │ suffix  │ regex for end of match to end of line     │
+    "    └─────────┴───────────────────────────────────────────┘
 
     " Require match to end on or after the cursor and prefer it to
     " start on or before the cursor.
@@ -367,13 +367,13 @@ endfu
 fu! matchit#next_unmatched(is_fwd, mode) abort "{{{2
     " Jump to the nearest unmatched:
     "
-    "         - (
-    "         - if
-    "         - <tag>
+    "    - (
+    "    - if
+    "    - <tag>
     "
-    "         - )
-    "         - endif
-    "         - </tag>
+    "    - )
+    "    - endif
+    "    - </tag>
 
     if get(b:, 'match_words', '') is# ''
         return
@@ -511,17 +511,17 @@ fu! s:parse_words(groups) abort "{{{2
     " A sequence of them doesn't have much sense, and thus should be reduced.
     " There can be 2 kinds of sequences:
     "
-    "       - only colons                          →   should be reduced to a single colon
-    "       - commas mixed with possible colons    →   should be reduced to a single comma
+    "    - only colons                          →   should be reduced to a single colon
+    "    - commas mixed with possible colons    →   should be reduced to a single comma
     "
     " Why only these 2 kinds? What about “only commas“?
     " Already covered by “commas mixed with possible colons“. Pay attention to “possible“.
 
     let groups = substitute(a:groups, s:EVEN_BACKSLASH.'\zs:\{2,}', ':', 'g')
 
-    "                                                                  ┌ a sequence of colons and commas
-    "                                                                  │ containing at least one comma
-    "                                                        ┌─────────┤
+    "                                                        ┌ a sequence of colons and commas
+    "                                                        │ containing at least one comma
+    "                                                        ├─────────┐
     let groups = substitute(groups.',', s:EVEN_BACKSLASH.'\zs[:,]*,[:,]*', ',', 'g')
     "                                                                         │
     "                                          replace it with a single comma ┘
@@ -532,11 +532,11 @@ fu! s:parse_words(groups) abort "{{{2
     " The rest of the code is an imbrication of while loops.
     " The purpose of the:
     "
-    "         - outer loop is to process groups
-    "         - inner loop is to process words in a group
+    "    - outer loop is to process groups
+    "    - inner loop is to process words in a group
 
-    "                     ┌ go on until there's only colons and/or commas in `groups`
-    "     ┌───────────────┤
+    "     ┌ go on until there's only colons and/or commas in `groups`
+    "     ├───────────────┐
     while groups =~ '[^:,]'
         " What's `i`(-1) and `j`(-1)? {{{
         "
@@ -562,25 +562,26 @@ fu! s:parse_words(groups) abort "{{{2
         let i = matchend(groups, s:EVEN_BACKSLASH.':')
         let j = matchend(groups, s:EVEN_BACKSLASH.',')
 
-        " ┌────────┬───────────────┐
-        " │ head   │ \(foo\)       │
-        " ├────────┼───────────────┤
-        " │ tail   │ end\1:        │
-        " ├────────┼───────────────┤
-        " │ groups │ \(bar\):end\1 │
-        " └────────┴───────────────┘
+        "    ┌────────┬───────────────┐
+        "    │ head   │ \(foo\)       │
+        "    ├────────┼───────────────┤
+        "    │ tail   │ end\1:        │
+        "    ├────────┼───────────────┤
+        "    │ groups │ \(bar\):end\1 │
+        "    └────────┴───────────────┘
         "
         " head + tail = 1st group
         " groups      = subsequent groups
 
-        "                               ┌ this is NOT a byte index,
-        "                               │ this is the weight of the desired substring;
-        "                             ┌─┤ the `-1` offset excludes the colon
+        "                             ┌ this is *not* a byte index,
+        "                             │ this is the weight of the desired substring;
+        "                             │ the `-1` offset excludes the colon
+        "                             ├─┐
         let head = strpart(groups, 0, i-1)
         let tail = strpart(groups, i, j-1-i).':'
         "                                     │
-        "                                     └─ useful to make sure the next `while` loop
-        "                                        parses `tail` fully
+        "                                     └ useful to make sure the next `while` loop
+        "                                       parses `tail` fully
 
         " This assignment removes the first group from `groups`.
         " So, after each iteration of the main `while` loop, `groups` gets smaller.
@@ -595,9 +596,9 @@ fu! s:parse_words(groups) abort "{{{2
         while i !=# -1
             " In 'if:else:endif' :
             "
-            "         - head = 'if'       assigned in                      the outer loop
-            "         - word = 'else'     assigned in the 1st iteration of the inner loop
-            "         - word = 'endif'    assigned in the 2nd iteration of the inner loop
+            "    - head = 'if'       assigned in                      the outer loop
+            "    - word = 'else'     assigned in the 1st iteration of the inner loop
+            "    - word = 'endif'    assigned in the 2nd iteration of the inner loop
 
             " next word in the group
             " (group currently processed in the main while loop)
@@ -710,9 +711,9 @@ endfu
 
 fu! s:resolve(head, word, output) abort "{{{2
 
-    "                             ┌───────────────── head of group
-    "                             │                ┌ a word of the same group
-    "                    ┌────────┤    ┌───────────┤
+    "                    ┌ head of group
+    "                    │             ┌ a word of the same group
+    "                    ├────────┐    ├───────────┐
     "         s:resolve('\(a\)\(b\)', '\(c\)\2\1\1\2')
     "
     " … should return table.word, where:
@@ -747,13 +748,13 @@ fu! s:resolve(head, word, output) abort "{{{2
         " The group number `w+b` within  backref corresponds to the group number
         " `s` within a:head.
 
-        " ┌───┬───────────────────────────────────────────────┐
-        " │ w │ number of '\(' in word before the current one │
-        " ├───┼───────────────────────────────────────────────┤
-        " │ b │ number of the current '\(' in backref         │
-        " ├───┼───────────────────────────────────────────────┤
-        " │ s │ number of the current '\(' in a:head          │
-        " └───┴───────────────────────────────────────────────┘
+        "    ┌───┬───────────────────────────────────────────────┐
+        "    │ w │ number of '\(' in word before the current one │
+        "    ├───┼───────────────────────────────────────────────┤
+        "    │ b │ number of the current '\(' in backref         │
+        "    ├───┼───────────────────────────────────────────────┤
+        "    │ s │ number of the current '\(' in a:head          │
+        "    └───┴───────────────────────────────────────────────┘
 
         let w = s:count(substitute(strpart(word, 0, i-1), '\\\\', '', 'g'), '\(', '1')
         let b = 1
@@ -794,9 +795,9 @@ fu! s:set_ic() abort "{{{2
     " then save the latter, before resetting it according to `b:match_ignorecase`.
     if get(b:, 'match_ignorecase', &ic) !=# &ic
     "                              │
-    "                              └─ by default, b:match_ignorecase is not set up
-    "                              so it's not different from `&ic`, because it doesn't exist;
-    "                              and if by default, it's not different, then it's the same
+    "                              └ by default, b:match_ignorecase is not set up
+    "                                so it's not different from `&ic`, because it doesn't exist;
+    "                                and if by default, it's not different, then it's the same
         let &ic = b:match_ignorecase
     endif
 endfu
@@ -805,27 +806,28 @@ fu! s:set_pat() abort "{{{2
 
     " if not already done, set the following script variables
     "
-    "         ┌──────────────┬─────────────────────────────────────┐
-    "         │ s:has_BR     │ flag for whether there are backrefs │
-    "         │              │ in b:match_words                    │
-    "         ├──────────────┼─────────────────────────────────────┤
-    "         │ s:pat        │ parsed version of b:match_words     │
-    "         │              │                 + def_words         │
-    "         ├──────────────┼─────────────────────────────────────┤
-    "         │ s:all_words  │ conversion of `s:pat` into a regex  │
-    "         └──────────────┴─────────────────────────────────────┘
+    "    ┌──────────────┬─────────────────────────────────────┐
+    "    │ s:has_BR     │ flag for whether there are backrefs │
+    "    │              │ in b:match_words                    │
+    "    ├──────────────┼─────────────────────────────────────┤
+    "    │ s:pat        │ parsed version of b:match_words     │
+    "    │              │                 + def_words         │
+    "    ├──────────────┼─────────────────────────────────────┤
+    "    │ s:all_words  │ conversion of `s:pat` into a regex  │
+    "    └──────────────┴─────────────────────────────────────┘
 
     let match_words = get(b:, 'match_words', '')
 
     if match_words isnot# s:last_words || &l:mps isnot# s:last_mps
 
-        "             ┌─ default pairs stored in 'mps'
-        "             │
-        "             │         ┌─ C-style comment (to mimic `%`)
-        "             │         │                                                  ┌ C preprocessor conditionals
-        "             │         │                                                  │ (to mimic `%`)
-        " ┌───────────┤ ┌───────┤ ┌────────────────────────────────────────────────┤
-        " (:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>
+        "     ┌ default pairs stored in 'mps'
+        "     │
+        "     │             ┌ C-style comment (to mimic `%`)
+        "     │             │
+        "     │             │         ┌ C preprocessor conditionals
+        "     │             │         │ (to mimic `%`)
+        "     ├───────────┐ ├───────┐ ├────────────────────────────────────────────────┐
+        "     (:),{:},\[:\],\/\*:\*\/,#\s*if\%(def\)\?:#\s*else\>:#\s*elif\>:#\s*endif\>
 
         let def_words =   escape(&l:mps, '[$^.*~\/?]')
         \               . (!empty(&l:mps) ? ',' : '')
@@ -949,8 +951,7 @@ let s:pat_unresolved = ''
 " That's  why `s:EVEN_BACKSLASH`  is useful:  to make  the difference  between a
 " literal and special colon/comma.
 "}}}
-"                             ┌ no slash before an even number of slashes
-"                       ┌─────┤
 let s:EVEN_BACKSLASH = '\\\@1<!\%(\\\\\)*'
-"                                └──┤
-"                                   └ 2 slashes
+"                       ├─────┘   ├──┘
+"                       │         └ 2 slashes
+"                       └ no slash before an even number of slashes
