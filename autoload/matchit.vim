@@ -523,8 +523,8 @@ fu s:parse_words(groups) abort "{{{2
     "                                                        │ containing at least one comma
     "                                                        ├─────────┐
     let groups = substitute(groups.',', s:EVEN_BACKSLASH.'\zs[:,]*,[:,]*', ',', 'g')
-    "                                                                         │
-    "                                          replace it with a single comma ┘
+    "                                                                       │
+    "                                        replace it with a single comma ┘
 
     " We'll return this variable at the end of the function.
     " It should store the groups with all backrefs resolved.
