@@ -61,7 +61,7 @@ let g:autoloaded_matchit = 1
 
 
 " Functions {{{1
-fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
+fu s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
     " Assume a:comma = ",".  Then the format for a:patterns and a:1 is
     "   a:patterns = "<pat1>,<pat2>,..."
     "   a:1 = "<alt1>,<alt2>,..."
@@ -109,7 +109,7 @@ fu! s:choose(patterns, string, comma, branch, prefix, suffix, ...) abort "{{{2
     return current
 endfu
 
-fu! s:clean_up(old_ic, mode, ...) abort "{{{2
+fu s:clean_up(old_ic, mode, ...) abort "{{{2
     " Restore options and do some special handling for Operator-pending mode.
     " The optional argument is the tail of the matching group.
 
@@ -155,7 +155,7 @@ fu! s:clean_up(old_ic, mode, ...) abort "{{{2
     endif
 endfu
 
-fu! s:count(string, pattern, ...) abort "{{{2
+fu s:count(string, pattern, ...) abort "{{{2
     " Count the number of disjoint copies of pattern in string.
     " If the pattern is a literal string and contains no '0' or '1' characters
     " then s:count(string, pattern, '0', '1') should be faster than
@@ -183,12 +183,12 @@ fu! s:count(string, pattern, ...) abort "{{{2
     return result
 endfu
 
-fu! s:get_info() abort "{{{2
+fu s:get_info() abort "{{{2
     " In s:clean_up(), we may need to check whether the cursor moved forward.
     return [&l:ic, line('.'), col('.')]
 endfu
 
-fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
+fu s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     " Example (simplified HTML patterns).
     "
     " If:
@@ -244,7 +244,7 @@ fu! s:insert_refs(groupBR, prefix, group, suffix, line) abort "{{{2
     return head.':'.tailBR
 endfu
 
-fu! matchit#next_word(is_fwd, mode) abort "{{{2
+fu matchit#next_word(is_fwd, mode) abort "{{{2
     " The direction has been encoded as a special kind of space, and typed
     " directly in the typeahead buffer. Consume it, and decode it.
     let [old_ic, startline, startcol] = s:get_info()
@@ -364,7 +364,7 @@ fu! matchit#next_word(is_fwd, mode) abort "{{{2
     call s:clean_up(old_ic, a:mode, startline, startcol, middle.'\|'.end)
 endfu
 
-fu! matchit#next_unmatched(is_fwd, mode) abort "{{{2
+fu matchit#next_unmatched(is_fwd, mode) abort "{{{2
     " Jump to the nearest unmatched:
     "
     "    - (
@@ -466,7 +466,7 @@ fu! matchit#next_unmatched(is_fwd, mode) abort "{{{2
     call s:clean_up(old_ic, a:mode)
 endfu
 
-fu! s:parse_skip(str) abort "{{{2
+fu s:parse_skip(str) abort "{{{2
     " Search backwards for "if" or "while" or "<tag>" or ...
     " and return "endif" or "endwhile" or "</tag>" or ... .
     " For now, this uses b:match_words and the same script variables
@@ -496,7 +496,7 @@ fu! s:parse_skip(str) abort "{{{2
     return skip
 endfu
 
-fu! s:parse_words(groups) abort "{{{2
+fu s:parse_words(groups) abort "{{{2
 
     " Input: a comma-separated list of groups with backrefs, such as:
     "
@@ -622,7 +622,7 @@ fu! s:parse_words(groups) abort "{{{2
     return substitute(parsed, ',$', '', '')
 endfu
 
-fu! matchit#percent_rhs(is_fwd) abort "{{{2
+fu matchit#percent_rhs(is_fwd) abort "{{{2
     let mode = mode(1)
 
     " If we're in visual block mode, we can't pass `C-v` directly.
@@ -655,7 +655,7 @@ fu! matchit#percent_rhs(is_fwd) abort "{{{2
     \              index(['v', 'V', "\<c-v>\<c-v>"], mode) >=0 ? "m'gv``" : '')
 endfu
 
-fu! s:ref(string, d, ...) abort "{{{2
+fu s:ref(string, d, ...) abort "{{{2
     " No extra arguments: s:ref(string, d) will find the d'th occurrence of '\('
     " and return  it, along  with everything  up to  and including  the matching
     " '\)'.
@@ -709,7 +709,7 @@ fu! s:ref(string, d, ...) abort "{{{2
        \ :     strpart(a:string, start, len)
 endfu
 
-fu! s:resolve(head, word, output) abort "{{{2
+fu s:resolve(head, word, output) abort "{{{2
 
     "                    ┌ head of group
     "                    │             ┌ a word of the same group
@@ -790,7 +790,7 @@ fu! s:resolve(head, word, output) abort "{{{2
        \ : table.word
 endfu
 
-fu! s:set_ic() abort "{{{2
+fu s:set_ic() abort "{{{2
     " If we've set up `b:match_ignorecase` differently than `&ignorecase`,
     " then save the latter, before resetting it according to `b:match_ignorecase`.
     if get(b:, 'match_ignorecase', &ic) != &ic
@@ -802,7 +802,7 @@ fu! s:set_ic() abort "{{{2
     endif
 endfu
 
-fu! s:set_pat() abort "{{{2
+fu s:set_pat() abort "{{{2
 
     " if not already done, set the following script variables
     "
@@ -880,7 +880,7 @@ fu! s:set_pat() abort "{{{2
     endif
 endfu
 
-fu! s:wholematch(line, pat, start) abort "{{{2
+fu s:wholematch(line, pat, start) abort "{{{2
 
     " NOTE:
     " I think that the purpose of this function is to tweak a regex so that
@@ -951,7 +951,7 @@ let s:pat_unresolved = ''
 " That's  why `s:EVEN_BACKSLASH`  is useful:  to make  the difference  between a
 " literal and special colon/comma.
 "}}}
-let s:EVEN_BACKSLASH = '\\\@1<!\%(\\\\\)*'
-"                       ├─────┘   ├──┘
-"                       │         └ 2 slashes
-"                       └ no slash before an even number of slashes
+const s:EVEN_BACKSLASH = '\\\@1<!\%(\\\\\)*'
+"                         ├─────┘   ├──┘
+"                         │         └ 2 slashes
+"                         └ no slash before an even number of slashes
