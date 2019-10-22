@@ -115,7 +115,7 @@ fu s:clean_up(old_ic, mode, ...) abort "{{{2
 
     if a:0
         let [startline, startcol, pat] = a:000
-        let [cur_line, cur_col] = getpos('.')[1:2]
+        let [cur_line, cur_col] = getcurpos()[1:2]
     endif
 
     exe 'set '.(a:old_ic ?  'ic' : 'noic')
